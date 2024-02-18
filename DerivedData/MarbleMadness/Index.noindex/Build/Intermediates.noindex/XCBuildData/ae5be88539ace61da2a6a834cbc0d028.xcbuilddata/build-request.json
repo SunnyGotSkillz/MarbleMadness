@@ -1,0 +1,59 @@
+{
+  "buildCommand" : {
+    "command" : "prepareForIndexing",
+    "enableIndexBuildArena" : true,
+    "targets" : null
+  },
+  "configuredTargets" : [
+    {
+      "guid" : "a03cbcc65a8fff3d62d50ad133dcb777cb193b2da7d487928b9e23729c468283"
+    }
+  ],
+  "containerPath" : "/Users/sunny/uclawinter24/cs32/MarbleMadness/MarbleMadness.xcodeproj",
+  "continueBuildingAfterErrors" : true,
+  "enableIndexBuildArena" : false,
+  "hideShellScriptEnvironment" : false,
+  "parameters" : {
+    "action" : "indexbuild",
+    "activeArchitecture" : "x86_64",
+    "activeRunDestination" : {
+      "disableOnlyActiveArch" : false,
+      "platform" : "macosx",
+      "sdk" : "macosx14.2",
+      "sdkVariant" : "macos",
+      "supportedArchitectures" : [
+        "x86_64h",
+        "x86_64"
+      ],
+      "targetArchitecture" : "x86_64"
+    },
+    "arenaInfo" : {
+      "buildIntermediatesPath" : "/Users/sunny/uclawinter24/cs32/MarbleMadness/DerivedData/MarbleMadness/Index.noindex/Build/Intermediates.noindex",
+      "buildProductsPath" : "/Users/sunny/uclawinter24/cs32/MarbleMadness/DerivedData/MarbleMadness/Index.noindex/Build/Products",
+      "derivedDataPath" : "/Users/sunny/uclawinter24/cs32/MarbleMadness/DerivedData",
+      "indexDataStoreFolderPath" : "/Users/sunny/uclawinter24/cs32/MarbleMadness/DerivedData/MarbleMadness/Index.noindex/DataStore",
+      "indexEnableDataStore" : true,
+      "indexPCHPath" : "/Users/sunny/uclawinter24/cs32/MarbleMadness/DerivedData/MarbleMadness/Index.noindex/PrecompiledHeaders",
+      "indexRegularBuildIntermediatesPath" : "/Users/sunny/uclawinter24/cs32/MarbleMadness/DerivedData/MarbleMadness/Build/Intermediates.noindex",
+      "indexRegularBuildProductsPath" : "/Users/sunny/uclawinter24/cs32/MarbleMadness/DerivedData/MarbleMadness/Build/Products",
+      "pchPath" : "/Users/sunny/uclawinter24/cs32/MarbleMadness/DerivedData/MarbleMadness/Index.noindex/Build/Intermediates.noindex/PrecompiledHeaders"
+    },
+    "configurationName" : "Debug",
+    "overrides" : {
+      "synthesized" : {
+        "table" : {
+          "ENABLE_PREVIEWS" : "NO",
+          "ENABLE_XOJIT_PREVIEWS" : "NO",
+          "ONLY_ACTIVE_ARCH" : "YES"
+        }
+      }
+    }
+  },
+  "qos" : "utility",
+  "schemeCommand" : "launch",
+  "showNonLoggedProgress" : true,
+  "useDryRun" : false,
+  "useImplicitDependencies" : true,
+  "useLegacyBuildLocations" : false,
+  "useParallelTargets" : true
+}
