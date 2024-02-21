@@ -61,7 +61,7 @@ class GraphObject
 	virtual void moveTo(double x, double y)
 	{
 		m_destX = x;
-		m_destY = y;
+        m_destY = y;
 		increaseAnimationNumber();
 	}
 

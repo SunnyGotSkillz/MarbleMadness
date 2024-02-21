@@ -15,6 +15,8 @@ public:
     virtual int init();
     virtual int move();
     virtual void cleanUp();
+    
+    bool isWall(double x, double y);
 
 private:
     std::vector<Actor*> actors;

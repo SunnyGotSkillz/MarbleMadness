@@ -16,6 +16,7 @@ StudentWorld::StudentWorld(string assetPath)
 }
 
 StudentWorld::~StudentWorld() {
+    // SAME AS CLEANUP()
     if (actors.end() == actors.begin()) return; // empty vector
     
     std::vector<Actor*>::iterator it;
@@ -57,10 +58,10 @@ int StudentWorld::init()
             item = lev.getContentsOf(x, y);
             if (item == Level::player) {
                 // PLAYER at (x,y)
-                actors.push_back(new Avatar(x, y));
+                actors.push_back(new Avatar(x, y, this));
             } else if (item == Level::wall) {
                 // WALL at (x,y)
-                actors.push_back(new Wall(x,y));
+                actors.push_back(new Wall(x, y, this));
             }
         }
     }
@@ -94,4 +95,33 @@ int StudentWorld::move()
 
 void StudentWorld::cleanUp()
 {
+    if (actors.end() == actors.begin()) return; // empty vector
+    
+    std::vector<Actor*>::iterator it;
+    it = actors.end();
+    it--;
+    while (it != actors.begin()) {
+        std::vector<Actor*>::iterator it2;
+        it2 = it;
+        it2--;
+        delete *it;
+        actors.erase(it);
+        it = it2;
+    }
+    delete *it;
+    actors.erase(it);
 }
+
+
+ bool StudentWorld::isWall(double x, double y) {
+     std::vector<Actor*>::iterator it;
+     it = actors.begin();
+     while (it != actors.end()) {
+         if (((*it)->getX()) == x && ((*it)->getY()) == y) {
+             return true;
+         }
+         it++;
+     }
+ 
+     return false;
+ }
