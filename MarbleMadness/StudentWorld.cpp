@@ -8,37 +8,18 @@ GameWorld* createStudentWorld(string assetPath)
 	return new StudentWorld(assetPath);
 }
 
-// Students:  Add code to this file, StudentWorld.h, Actor.h, and Actor.cpp
-
 StudentWorld::StudentWorld(string assetPath)
 : GameWorld(assetPath)
 {
+    actors.clear();
 }
 
 StudentWorld::~StudentWorld() {
-    // SAME AS CLEANUP()
-    if (actors.end() == actors.begin()) return; // empty vector
-    
-    std::vector<Actor*>::iterator it;
-    it = actors.end();
-    it--;
-    while (it != actors.begin()) {
-        std::vector<Actor*>::iterator it2;
-        it2 = it;
-        it2--;
-        delete *it;
-        actors.erase(it);
-        it = it2;
-    }
-    delete *it;
-    actors.erase(it);
+    cleanUp();
 }
 
 int StudentWorld::init()
 {
-    // initialize the maze's vector
-    if (!actors.empty()) actors.clear();
-    
     // create level data file string
     string curLevel = "level";
     if (getLevel() < 10) curLevel += "0" + to_string(getLevel()) + ".txt";
@@ -82,13 +63,8 @@ int StudentWorld::move()
             (*it)->doSomething();
         }
         
-        // check if player died or completed level
-        
-        
         it++;
     }
-   
-    // return PLAYER DIED OR PLAYER COMPLETED LEVEL OR CONTINUE GAME
     
 	return GWSTATUS_CONTINUE_GAME;
 }
