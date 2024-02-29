@@ -7,11 +7,6 @@
 #include <string>
 #include <vector>
 
-// left:   dx is -1, dy is  0
-// right:  dx is  1, dy is  0
-// up:     dx is  0, dy is  1
-// down:   dx is  0, dy is -1
-
 class StudentWorld : public GameWorld {
 public:
     StudentWorld(std::string assetPath);
@@ -26,12 +21,21 @@ public:
     bool isPlayerColocatedWith(int x, int y) const;
     void addActor(Actor* a);
     bool swallowSwallowable(Actor* a);
-    
+    Actor* getColocatedStealable(int x, int y) const;
+    void restorePlayerHealth() { player->setHitPoints(20); }
+    void increaseAmmo() { player->setPeas(player->getPeas() + 20); }
+    bool anyCrystals() const { return crystalCount > 0; }
+    void decCrystals() { crystalCount--; } 
+    void setLevelFinished() { levelFinished = true; }
 
 private:
     std::vector<Actor*> actors;
-    Actor* player;
+    Avatar* player;
     int bonusPoints;
+    int crystalCount;
+    bool levelFinished;
+    
+    void setDisplayText();
 };
 
 #endif // STUDENTWORLD_H_

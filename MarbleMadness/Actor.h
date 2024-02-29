@@ -28,6 +28,7 @@ public:
     virtual bool allowsMarbleColocation() const { return false; }
     virtual bool canBePushed() const { return false; }
     virtual bool isSwallowable() const { return false; }
+    virtual bool isStealable() const { return false; }
 private:
     int hitPoints;
     StudentWorld* world;
@@ -54,6 +55,7 @@ public:
     virtual void doSomething();
     void setPeas(int peas) { m_peas = peas; }
     int getPeas() const { return m_peas; }
+    int getHealthPct() const { return (getHitPoints()/20) * 100; }
     virtual void damage(int damageAmt);
     virtual bool canPushMarbles() const { return true; };
 private:
@@ -96,19 +98,27 @@ private:
 
 class Pit : public Actor {
 public:
-    Pit(double startX, double startY, StudentWorld* actorWorld) : Actor(IID_PIT, startX, startY, none, actorWorld) {
-    }
+    Pit(double startX, double startY, StudentWorld* actorWorld) : Actor(IID_PIT, startX, startY, none, actorWorld) {}
     virtual void doSomething();
     virtual bool allowsMarbleColocation() const { return true; };
     
 private:
 };
 
+class Exit : public Actor {
+public:
+    Exit(int startX, int startY, StudentWorld* world) : Actor(IID_EXIT, startX, startY, none, world) {
+        setVisible(false);
+    }
+    virtual void doSomething();
+    virtual bool allowsAgentColocation() const { return true; };
+};
+
 class PickupableItem : public Actor {
 public:
     PickupableItem(StudentWorld* world, int startX, int startY, int imageID, int score) : Actor(imageID, startX, startY, none, world) { m_score = score; }
     virtual void doSomething();
-    virtual bool allowsAgentColocation() const;
+    virtual bool allowsAgentColocation() const { return true; };
 private:
     int m_score;
 };
@@ -117,6 +127,43 @@ class Crystal : public PickupableItem
 {
 public:
     Crystal(int startX, int startY, StudentWorld* world) : PickupableItem(world, startX, startY, IID_CRYSTAL, 50) {}
+};
+
+class Goodie : public PickupableItem {
+public:
+    Goodie(StudentWorld* world, int startX, int startY, int imageID, int score) : PickupableItem(world, startX, startY, imageID, score) {
+        stolen = false;
+    }
+    virtual void doSomething();
+    virtual bool isStealable() const { return true; }
+
+    // Set whether this goodie is currently stolen.
+    void setStolen(bool status) { stolen = status; }
+    void setType(int goodie) { type = goodie; }
+private:
+    bool stolen;
+    int type; // 0: Extra life, 1: Restore health, 2: Ammo
+};
+
+class ExtraLifeGoodie : public Goodie {
+public:
+    ExtraLifeGoodie(int startX, int startY, StudentWorld* world) : Goodie(world, startX, startY, IID_EXTRA_LIFE, 1000) {
+        setType(0);
+    }
+};
+
+class RestoreHealthGoodie : public Goodie {
+public:
+    RestoreHealthGoodie(int startX, int startY, StudentWorld* world) : Goodie(world, startX, startY, IID_RESTORE_HEALTH, 500) {
+        setType(1);
+    }
+};
+
+class AmmoGoodie : public Goodie {
+public:
+    AmmoGoodie(int startX, int startY, StudentWorld* world) : Goodie(world, startX, startY, IID_AMMO, 100) {
+        setType(2);
+    }
 };
 
 #endif // ACTOR_H_

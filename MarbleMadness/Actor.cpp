@@ -100,8 +100,46 @@ void Pit::doSomething() {
 void PickupableItem::doSomething() {
     if (!isAlive()) return;
     
-    getWorld()->increaseScore(m_score);
-    setDead();
-    getWorld()->playSound(SOUND_GOT_GOODIE);
+    if (getWorld()->isPlayerColocatedWith(getX(), getY())) {
+        getWorld()->increaseScore(m_score);
+        setDead();
+        getWorld()->playSound(SOUND_GOT_GOODIE);
+        getWorld()->decCrystals();
+    }
+}
+
+void Goodie::doSomething() {
+    if (!isAlive()) return;
+    
+    Actor* goodie = getWorld()->getColocatedStealable(getX(), getY());
+    int x = goodie->getX(); int y = goodie->getY();
+    if (getWorld()->isPlayerColocatedWith(x, y) && !stolen) {
+        if (type == 0) { // EXTRA LIFE
+            getWorld()->increaseScore(1000);
+            getWorld()->incLives();
+        } else if (type == 1) {
+            getWorld()->increaseScore(500);
+            getWorld()->restorePlayerHealth();
+        } else if (type == 2) {
+            getWorld()->increaseScore(100);
+            getWorld()->increaseAmmo();
+        }
+        
+        setDead();
+        getWorld()->playSound(SOUND_GOT_GOODIE);
+    }
+}
+
+void Exit::doSomething() {
+    if (!getWorld()->anyCrystals()) {
+        setVisible(true);
+        getWorld()->playSound(SOUND_REVEAL_EXIT);
+    }
+    
+    if (getWorld()->isPlayerColocatedWith(getX(), getY()) && !getWorld()->anyCrystals()) {
+        getWorld()->playSound(SOUND_FINISHED_LEVEL);
+        getWorld()->increaseScore(2000);
+        getWorld()->setLevelFinished();
+    }
 }
 

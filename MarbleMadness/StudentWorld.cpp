@@ -1,6 +1,8 @@
 #include "StudentWorld.h"
 #include "GameConstants.h"
 #include <string>
+#include <sstream>
+#include <iomanip>
 using namespace std;
 
 GameWorld* createStudentWorld(string assetPath)
@@ -35,6 +37,8 @@ int StudentWorld::init()
     
     // level sucessfully loaded
     bonusPoints = 1000;
+    crystalCount = 0;
+    levelFinished = false;
     Level::MazeEntry item;
     for (int x = 0; x < VIEW_WIDTH; x++) {
         for (int y = 0; y < VIEW_HEIGHT; y++) {
@@ -54,6 +58,19 @@ int StudentWorld::init()
             } else if (item == Level::crystal) {
                 // CRYSTAL at (x,y)
                 actors.push_back(new Crystal(x, y, this));
+                crystalCount++;
+            } else if (item == Level::exit) {
+                // EXIT at (x,y)
+                actors.push_back(new Exit(x, y, this));
+            } else if (item == Level::extra_life) {
+                // EXTRA LIFE GOODIE at (x,y)
+                actors.push_back(new ExtraLifeGoodie(x, y, this));
+            } else if (item == Level::restore_health) {
+                // RESTORE HEALTH GOODIE at (x,y)
+                actors.push_back(new RestoreHealthGoodie(x, y, this));
+            } else if (item == Level::ammo) {
+                // AMMO GOODIE at (x,y)
+                actors.push_back(new AmmoGoodie(x, y, this));
             }
         }
     }
@@ -83,7 +100,10 @@ int StudentWorld::move()
                 return GWSTATUS_PLAYER_DIED;
             }
             
-            // TODO: IF PLAYER STEPS ON EXIT AND COLLECTED ALL CRYSTALS, THEN INCREASE PLAYER'S SCORE AND RETURN GWSTATUS_FINISHED_LEVEL
+            if (levelFinished) {
+                increaseScore(bonusPoints);
+                return GWSTATUS_FINISHED_LEVEL;
+            }
         }
         
         it++;
@@ -111,11 +131,16 @@ int StudentWorld::move()
     
     if (bonusPoints >= 1) bonusPoints--;
     
-    // TODO: ACTIVATE THE EXIT ONCE THE PLAYER HAS COLLECTED ALL THE CRYSTALS
+    setDisplayText();
     
-    // TODO: UPDATE THE STATUS TEXT AT THE TOP OF THE SCREEN
+    if (!(player->isAlive())) { // player died after actor did something
+        return GWSTATUS_PLAYER_DIED;
+    }
     
-    // TODO: CHECK IF PLAYER DIED OR COMPLETED LEVEL AGAIN AND RETURN VALUE
+    if (levelFinished) {
+        increaseScore(bonusPoints);
+        return GWSTATUS_FINISHED_LEVEL;
+    }
     
 	return GWSTATUS_CONTINUE_GAME;
 }
@@ -152,6 +177,19 @@ bool StudentWorld::canAgentMoveTo(Agent *agent, int x, int y, int dx, int dy) co
             }
             return false;
         }
+        if ((*it)->allowsAgentColocation() && ((*it)->getX()) == x+dx && ((*it)->getY()) == y+dy) {
+            if ((*it)->allowsAgentColocation() && !(*it)->isStealable()) { // crystal or exit
+                if (anyCrystals()) { // crystal
+                    
+                } else { // exit
+                    
+                }
+            }
+            if ((*it)->allowsAgentColocation() && (*it)->isStealable()) { // goodie
+            }
+            return true;
+        }
+        
         it++;
     }
 
@@ -175,13 +213,26 @@ bool StudentWorld::isPlayerColocatedWith(int x, int y) const {
     std::vector<Actor*>::const_iterator it;
     it = actors.begin();
     while (it != actors.end()) {
-        if (((*it)->getX()) == x && ((*it)->getY()) == y) {
+        if ((*it)->allowsAgentColocation() && (player->getX()) == x && (player->getY()) == y) {
             return true;
         }
         it++;
     }
 
     return false;
+}
+
+Actor* StudentWorld::getColocatedStealable(int x, int y) const {
+    std::vector<Actor*>::const_iterator it;
+    it = actors.begin();
+    while (it != actors.end()) {
+        if ((*it)->allowsAgentColocation() && (*it)->isStealable() && ((*it)->getX()) == x && ((*it)->getY()) == y) {
+            return *it;
+        }
+        it++;
+    }
+
+    return nullptr;
 }
 
 bool StudentWorld::swallowSwallowable(Actor* a) { // pit only
@@ -221,4 +272,24 @@ bool StudentWorld::damageSomething(Actor* a, int damageAmt) { // only pea
     
     if (factory) return true;
     return false;
+}
+
+void StudentWorld::setDisplayText() {
+    int score = getScore();
+    int level = getLevel();
+    int livesLeft = getLives();
+    int health = player->getHealthPct();
+    int ammo = player->getPeas();
+    
+    ostringstream oss;
+    oss << "Score: ";
+    oss.fill('0');
+    oss << setw(7) << score;
+    oss <<  " Level: ";
+    oss << setw(2) << level;
+    oss.fill(' ');
+    oss << " Lives: " << livesLeft << " Health: " << health << "%" << " Ammo: " << ammo << setw(4) << " Bonus: " << bonusPoints;
+    string s = oss.str();
+    
+    setGameStatText(s);
 }
