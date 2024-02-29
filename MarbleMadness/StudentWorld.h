@@ -7,8 +7,12 @@
 #include <string>
 #include <vector>
 
-class StudentWorld : public GameWorld
-{
+// left:   dx is -1, dy is  0
+// right:  dx is  1, dy is  0
+// up:     dx is  0, dy is  1
+// down:   dx is  0, dy is -1
+
+class StudentWorld : public GameWorld {
 public:
     StudentWorld(std::string assetPath);
     ~StudentWorld();
@@ -16,10 +20,18 @@ public:
     virtual int move();
     virtual void cleanUp();
     
-    bool isWall(double x, double y);
+    bool damageSomething(Actor* a, int damageAmt);
+    bool canAgentMoveTo(Agent* agent, int x, int y, int dx, int dy) const;
+    bool canMarbleMoveTo(int x, int y) const;
+    bool isPlayerColocatedWith(int x, int y) const;
+    void addActor(Actor* a);
+    bool swallowSwallowable(Actor* a);
+    
 
 private:
     std::vector<Actor*> actors;
+    Actor* player;
+    int bonusPoints;
 };
 
 #endif // STUDENTWORLD_H_
