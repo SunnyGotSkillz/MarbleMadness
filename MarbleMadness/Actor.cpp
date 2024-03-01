@@ -1,5 +1,7 @@
 #include "Actor.h"
 #include "StudentWorld.h"
+#include <iostream>
+using namespace std;
 
 void Avatar::doSomething() {
     if (!isAlive()) return; // avatar is dead, do nothing
@@ -9,19 +11,20 @@ void Avatar::doSomething() {
     if (getWorld()->getKey(ch)) {
         switch (ch) {
             case KEY_PRESS_LEFT:
-                setDirection(180);
+                setDirection(left);
                 if (getWorld()->canAgentMoveTo(this, getX(), getY(), -1, 0)) moveTo(getX()-1, getY());
                 break;
             case KEY_PRESS_RIGHT:
-                setDirection(0);
+                setDirection(right);
                 if (getWorld()->canAgentMoveTo(this, getX(), getY(), 1, 0)) moveTo(getX()+1, getY());
                 break;
             case KEY_PRESS_UP:
-                setDirection(90);
+                setDirection(up);
                 if (getWorld()->canAgentMoveTo(this, getX(), getY(), 0, 1)) moveTo(getX(), getY()+1);
                 break;
             case KEY_PRESS_DOWN:
-                setDirection(270);
+                setDirection(down);
+ 
                 if (getWorld()->canAgentMoveTo(this, getX(), getY(), 0, -1)) moveTo(getX(), getY()-1);
                 break;
             case KEY_PRESS_ESCAPE:
@@ -146,25 +149,38 @@ void Exit::doSomething() {
     }
 }
 
-void Robot::doSomething() {
+void RageBot::doSomething() {
     if (!isAlive()) return;
     
-    getWorld()->playSound(SOUND_ENEMY_FIRE);
-    Actor* pea;
     if (getDirection() == up) {
-        pea = new Pea(getX(), getY()+1, up, getWorld());
+        if (getWorld()->existsClearShotToPlayer(getX(), getY()+1, 0, 1)) {
+            Actor* pea = new Pea(getX(), getY()+1, up, getWorld());
+            getWorld()->addActor(pea);
+            getWorld()->playSound(SOUND_ENEMY_FIRE);
+            return;
+        }
     } else if (getDirection() == down) {
-        pea = new Pea(getX(), getY()-1, down, getWorld());
+        if (getWorld()->existsClearShotToPlayer(getX(), getY()-1, 0, -1)) {
+            Actor* pea = new Pea(getX(), getY()-1, down, getWorld());
+            getWorld()->addActor(pea);
+            getWorld()->playSound(SOUND_ENEMY_FIRE);
+            return;
+        }
     } else if (getDirection() == left) {
-        pea = new Pea(getX()-1, getY(), left, getWorld());
+        if (getWorld()->existsClearShotToPlayer(getX()-1, getY(),-1, 0)) {
+            Actor* pea = new Pea(getX()-1, getY(), left, getWorld());
+            getWorld()->addActor(pea);
+            getWorld()->playSound(SOUND_ENEMY_FIRE);
+            return;
+        }
     } else { // right
-        pea = new Pea(getX()+1, getY(), right, getWorld());
+        if (getWorld()->existsClearShotToPlayer(getX()+1, getY(), 1, 0)) {
+            Actor* pea = new Pea(getX()+1, getY(), right, getWorld());
+            getWorld()->addActor(pea);
+            getWorld()->playSound(SOUND_ENEMY_FIRE);
+            return;
+        }
     }
-    getWorld()->addActor(pea);
-}
-
-void RageBot::doSomething() {
-    Robot::doSomething();
     
     if (getDirection() == left) {
         if (getWorld()->canAgentMoveTo(this, getX(), getY(), -1, 0)) moveTo(getX()-1, getY());
@@ -181,53 +197,13 @@ void RageBot::doSomething() {
     }
 }
 
-void ThiefBot::doSomething() {
-    if (!isAlive()) return;
-    
-    Actor* goodie = getWorld()->getColocatedStealable(getX(), getY());
-    if (!pickedUpGoodie && goodie != nullptr) {
-        int chanceStealGoodie = rand() % 10 + 1;
-        if (chanceStealGoodie == 1) {
-            getWorld()->playSound(SOUND_ROBOT_MUNCH);
-            pickedUpGoodie = true;
-            stolenGoodie = goodie;
-            goodie->setVisible(false);
-            goodie->setDead();
-        }
-    } else {
-        if (currDistance != distanceBeforeTurning) {
-            if (getDirection() == left) {
-                if (getWorld()->canAgentMoveTo(this, getX(), getY(), -1, 0)) moveTo(getX()-1, getY());
-                else chooseNewDirection();
-            } else if (getDirection() == right) {
-                if (getWorld()->canAgentMoveTo(this, getX(), getY(), 1, 0)) moveTo(getX()+1, getY());
-                else chooseNewDirection();
-            } else if (getDirection() == down) {
-                if (getWorld()->canAgentMoveTo(this, getX(), getY(), 0, -1)) moveTo(getX(), getY()-1);
-                else chooseNewDirection();
-            } else {
-                if (getWorld()->canAgentMoveTo(this, getX(), getY(), 0, 1)) moveTo(getX(), getY()+1);
-                else chooseNewDirection();
-            }
-        } else {
-            chooseNewDirection();
-        }
-    }
-}
-
-void RegularThiefBot::doSomething() {
-    ThiefBot::doSomething();
-}
-
-void MeanThiefBot::doSomething() {
-    Robot::doSomething();
-    ThiefBot::doSomething();
-}
 
 void Robot::damage(int damageAmt) {
     setHitPoints(getHitPoints()-damageAmt);
+    
     if (getHitPoints() <= 0) {
         getWorld()->playSound(SOUND_ROBOT_DIE);
+        
         setDead();
         setVisible(false);
         getWorld()->increaseScore(m_score);
@@ -236,62 +212,36 @@ void Robot::damage(int damageAmt) {
     }
 }
 
-void ThiefBot::damage(int damageAmt) {
-    Robot::damage(damageAmt);
-    if (!isAlive()) {
-        stolenGoodie->moveTo(getX(), getY());
-        getWorld()->addActor(stolenGoodie);
-        stolenGoodie->setVisible(true);
-    }
-}
 
-void ThiefBot::chooseNewDirection() {
-    distanceBeforeTurning = rand() % 6 + 1;
-    int dirs[] = {up,down,left,right};
-    int d = dirs[rand() % 6 + 1];
-    
-    int i = 0;
-    while (i < 4) {
-        if (d == up) {
-            if (getWorld()->canAgentMoveTo(this, getX(), getY(), 0, 1)) {
-                setDirection(d);
-                moveTo(getX(), getY()+1);
-                break;
-            } else d = (d+90) % 360;
-        } else if (d == right) {
-            if (getWorld()->canAgentMoveTo(this, getX(), getY(), 1, 0)) {
-                setDirection(d);
-                moveTo(getX()+1, getY());
-                break;
-            } else d = (d+90) % 360;
-        } else if (d == left) {
-            if (getWorld()->canAgentMoveTo(this, getX(), getY(), -1, 0)) {
-                setDirection(d);
-                moveTo(getX()-1, getY());
-                break;
-            } else d = (d+90) % 360;
-            
-        } else if (d == down) {
-            if (getWorld()->canAgentMoveTo(this, getX(), getY(), 0, -1)) {
-                setDirection(d);
-                moveTo(getX(), getY()-1);
-                break;
-            } else d = (d+90) % 360;
+
+void Robot::firePea() {
+    if (getDirection() == up) {
+        if (getWorld()->existsClearShotToPlayer(getX(), getY()+1, 0, 1)) {
+            Actor* pea = new Pea(getX(), getY()+1, up, getWorld());
+            getWorld()->addActor(pea);
+            getWorld()->playSound(SOUND_ENEMY_FIRE);
+            return;
         }
-        
-        i++;
-    }
-    
-    if (i == 4) setDirection(d % 360);
-}
-
-void ThiefBotFactory::doSomething() {
-    int num = 0;
-    if (getWorld()->doFactoryCensus(getX(), getY(), 3, num) && num < 3) {
-        int num = rand() % 50 + 1;
-        if (num == 1) {
-            if (m_type == ThiefBotFactory::REGULAR) getWorld()->addActor(new RegularThiefBot(getX(), getY(), getWorld()));
-            else getWorld()->addActor(new MeanThiefBot(getX(), getY(), getWorld()));
+    } else if (getDirection() == down) {
+        if (getWorld()->existsClearShotToPlayer(getX(), getY()-1, 0, -1)) {
+            Actor* pea = new Pea(getX(), getY()-1, down, getWorld());
+            getWorld()->addActor(pea);
+            getWorld()->playSound(SOUND_ENEMY_FIRE);
+            return;
+        }
+    } else if (getDirection() == left) {
+        if (getWorld()->existsClearShotToPlayer(getX()-1, getY(),-1, 0)) {
+            Actor* pea = new Pea(getX()-1, getY(), left, getWorld());
+            getWorld()->addActor(pea);
+            getWorld()->playSound(SOUND_ENEMY_FIRE);
+            return;
+        }
+    } else { // right
+        if (getWorld()->existsClearShotToPlayer(getX()+1, getY(), 1, 0)) {
+            Actor* pea = new Pea(getX()+1, getY(), right, getWorld());
+            getWorld()->addActor(pea);
+            getWorld()->playSound(SOUND_ENEMY_FIRE);
+            return;
         }
     }
 }

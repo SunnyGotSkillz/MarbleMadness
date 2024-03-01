@@ -4,6 +4,8 @@
 #include "GraphObject.h"
 #include "GameConstants.h"
 #include <random>
+#include <iostream>
+using namespace std;
 
 class StudentWorld;
 
@@ -14,6 +16,8 @@ public:
         world = actorWorld;
         setVisible(true);
         alive = true;
+        stolen = false;
+        hitPoints = 0;
     }
     virtual void doSomething() = 0;
     void setHitPoints(int pts) { hitPoints = pts; }
@@ -22,7 +26,7 @@ public:
     bool isAlive() const { return alive; }
     void setDead() { alive = false; }
     
-    virtual void damage(int damageAmt) { hitPoints -= hitPoints; }
+    virtual void damage(int damageAmt) { hitPoints -= damageAmt; }
     virtual bool stopsPea() const { return false; }
     virtual bool isDamageable() const { return false; }
     virtual bool allowsAgentColocation() const { return false; }
@@ -30,11 +34,14 @@ public:
     virtual bool canBePushed() const { return false; }
     virtual bool isSwallowable() const { return false; }
     virtual bool isStealable() const { return false; }
-    virtual bool countsInFactoryCensus() const { return false; };
+    virtual bool countsInFactoryCensus() const { return false; }
+    virtual void setStolen(bool stole) { stolen = stole; }
+    virtual bool isStolen() { return stolen; }
 private:
     int hitPoints;
     StudentWorld* world;
     bool alive;
+    bool stolen;
 };
 
 class Agent : public Actor {
@@ -57,9 +64,9 @@ public:
     virtual void doSomething();
     void setPeas(int peas) { m_peas = peas; }
     int getPeas() const { return m_peas; }
-    int getHealthPct() const { return (getHitPoints()/20) * 100; }
+    double getHealthPct() const { return ((double) getHitPoints() / 20) * 100; }
     virtual void damage(int damageAmt);
-    virtual bool canPushMarbles() const { return true; };
+    virtual bool canPushMarbles() const { return true; }
 private:
     int m_peas;
 };
@@ -174,15 +181,16 @@ public:
         m_score = score;
         setHitPoints(hitPoints);
     }
-    virtual void doSomething();
+    virtual void doSomething() const { return; }
     virtual bool isDamageable() const { return true; };
     virtual void damage(int damageAmt);
     virtual bool canPushMarbles() const { return false; };
-
-      // Does this robot shoot?
+    virtual bool needsClearShot() const { return true; }
     virtual bool isShootingRobot() const { return true; };
 private:
     int m_score;
+    
+    void firePea();
 };
 
 class RageBot : public Robot {
@@ -191,55 +199,6 @@ public:
     virtual void doSomething();
 };
 
-class ThiefBot : public Robot {
-public:
-    ThiefBot(int startX, int startY, int imageID, int hitPoints, int score, StudentWorld* world) : Robot(world, startX, startY, imageID, hitPoints, score, right) {
-        distanceBeforeTurning = rand() % 6 + 1;
-        currDistance = 0;
-        dir = right;
-        pickedUpGoodie = false;
-        stolenGoodie = nullptr;
-    }
-    virtual void doSomething();
-    virtual bool countsInFactoryCensus() const { return true; }
-    virtual void damage(int damageAmt);
-private:
-    int distanceBeforeTurning;
-    int currDistance;
-    int dir;
-    bool pickedUpGoodie;
-    Actor* stolenGoodie;
-    
-    void chooseNewDirection();
-};
 
-class RegularThiefBot : public ThiefBot
-{
-public:
-    RegularThiefBot(int startX, int startY, StudentWorld* world) : ThiefBot(startX, startY, IID_THIEFBOT, 5, 10, world) {}
-    virtual void doSomething();
-    virtual bool isShootingRobot() const { return false; }
-};
-
-class MeanThiefBot : public ThiefBot
-{
-public:
-    MeanThiefBot(int startX, int startY, StudentWorld* world) : ThiefBot(startX, startY, IID_MEAN_THIEFBOT, 8, 20, world) {}
-    virtual void doSomething();
-};
-
-class ThiefBotFactory : public Actor {
-public:
-    enum ProductType { REGULAR, MEAN };
-
-    ThiefBotFactory(int startX, int startY, StudentWorld* world, ProductType type) : Actor(IID_ROBOT_FACTORY, startX, startY, none, world) {
-        m_type = type;
-    }
-    virtual void doSomething();
-    virtual bool stopsPea() const { return true; }
-    virtual bool countsInFactoryCensus() const { return true; }
-private:
-    ProductType m_type;
-};
 
 #endif // ACTOR_H_

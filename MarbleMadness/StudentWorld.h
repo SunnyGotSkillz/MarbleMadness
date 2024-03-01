@@ -21,6 +21,7 @@ public:
     bool isPlayerColocatedWith(int x, int y) const;
     void addActor(Actor* a);
     bool swallowSwallowable(Actor* a);
+    bool existsClearShotToPlayer(int x, int y, int dx, int dy) const;
     Actor* getColocatedStealable(int x, int y) const;
     bool doFactoryCensus(int x, int y, int distance, int& count) const;
     void restorePlayerHealth() { player->setHitPoints(20); }
@@ -35,6 +36,7 @@ private:
     int bonusPoints;
     int crystalCount;
     bool levelFinished;
+    int currTick;
     
     void setDisplayText();
 };

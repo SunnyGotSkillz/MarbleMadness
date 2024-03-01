@@ -40,6 +40,7 @@ int StudentWorld::init()
     bonusPoints = 1000;
     crystalCount = 0;
     levelFinished = false;
+    currTick = 0;
     Level::MazeEntry item;
     for (int x = 0; x < VIEW_WIDTH; x++) {
         for (int y = 0; y < VIEW_HEIGHT; y++) {
@@ -80,10 +81,10 @@ int StudentWorld::init()
                 actors.push_back(new RageBot(x, y, Actor::right, this));
             } else if (item == Level::thiefbot_factory) {
                 // NORMAL THIEFBOT FACTORY at (x,y)
-                actors.push_back(new ThiefBotFactory(x, y, this, ThiefBotFactory::REGULAR));
+                //actors.push_back(new ThiefBotFactory(x, y, this, ThiefBotFactory::REGULAR));
             } else if (item == Level::mean_thiefbot_factory) {
                 // MEAN THIEFBOT FACTORY at (x,y)
-                actors.push_back(new ThiefBotFactory(x, y, this, ThiefBotFactory::MEAN));
+                //actors.push_back(new ThiefBotFactory(x, y, this, ThiefBotFactory::MEAN));
             }
         }
     }
@@ -92,9 +93,14 @@ int StudentWorld::init()
 }
 
 int StudentWorld::move() {
+    int ticks = (28 - getLevel()) / 4;
+    if (ticks < 3) ticks = 3;
+    currTick++;
+    
     // Give player a chance to do something
     if (player->isAlive()) player->doSomething();
     if (!(player->isAlive())) {
+        decLives();
         return GWSTATUS_PLAYER_DIED;
     }
     
@@ -102,12 +108,15 @@ int StudentWorld::move() {
     std::vector<Actor*>::iterator it;
     it = actors.begin();
     while (it != actors.end()) {
-        if ((*it)->isAlive()) { // check if actor is alive because they may have died earlier in the tick
-            // TODO: ONLY LET ROBOTS MOVE DURING SPECIFIC TICK
-            
-            (*it)->doSomething();
+        if (!(*it)->isStolen() && (*it)->isAlive()) { // check if actor is alive because they may have died earlier in the tick
+            if ((*it)->isDamageable() && !(*it)->isSwallowable()) {
+                if (currTick == ticks) {
+                    (*it)->doSomething();
+                }
+            } else (*it)->doSomething();
             
             if (!(player->isAlive())) { // player died after actor did something
+                decLives();
                 return GWSTATUS_PLAYER_DIED;
             }
             
@@ -119,6 +128,8 @@ int StudentWorld::move() {
         
         it++;
     }
+    
+    if (currTick == ticks) currTick = 0;
     
     // Delete any dead actors
     it = actors.end();
@@ -145,6 +156,7 @@ int StudentWorld::move() {
     setDisplayText();
     
     if (!(player->isAlive())) { // player died after actor did something
+        decLives();
         return GWSTATUS_PLAYER_DIED;
     }
     
@@ -259,9 +271,10 @@ bool StudentWorld::damageSomething(Actor* a, int damageAmt) { // only pea
     while (it != actors.end()) {
         if (player->getX() == a->getX() && player->getY() == a->getY()) {
             player->damage(damageAmt);
+            return true;
         }
         if (((*it)->getX()) == a->getX() && ((*it)->getY()) == a->getY() && (*it)->isDamageable()) {
-            // marble, robot, player
+            // marble, robot
             (*it)->damage(damageAmt);
             return true;
         } else if (((*it)->getX()) == a->getX() && ((*it)->getY()) == a->getY() && (*it)->stopsPea()) {
@@ -274,6 +287,44 @@ bool StudentWorld::damageSomething(Actor* a, int damageAmt) { // only pea
     
     if (factory) return true;
     return false;
+}
+
+bool StudentWorld::existsClearShotToPlayer(int x, int y, int dx, int dy) const {
+    if (dy == 1 || dy == -1) {
+        if (player->getX() != x) {
+            return false;
+        } else {
+            for (int i = y; i < player->getY(); i++) {
+                std::vector<Actor*>::const_iterator it;
+                it = actors.begin();
+                while (it != actors.end()) {
+                    if ((*it)->getY() == i && (*it)->getX() == x && ((*it)->stopsPea() || (*it)->isDamageable())) {
+                        return false;
+                    }
+                            
+                    it++;
+                }
+            }
+        }
+    } else if (dx == 1 || dx == -1) {
+        if (player->getY() != y) {
+            return false;
+        } else {
+            for (int i = x; i < player->getX(); i++) {
+                std::vector<Actor*>::const_iterator it;
+                it = actors.begin();
+                while (it != actors.end()) {
+                    if ((*it)->getX() == i && (*it)->getY() == y && ((*it)->stopsPea() || (*it)->isDamageable())) {
+                        return false;
+                    }
+                            
+                    it++;
+                }
+            }
+        }
+    }
+    
+    return true;
 }
 
 bool StudentWorld::doFactoryCensus(int x, int y, int distance, int& count) const {
@@ -298,7 +349,7 @@ bool StudentWorld::doFactoryCensus(int x, int y, int distance, int& count) const
         }
     }
     
-    return count > 0;
+    return true;
 }
 
 void StudentWorld::setDisplayText() {
@@ -315,7 +366,10 @@ void StudentWorld::setDisplayText() {
     oss <<  " Level: ";
     oss << setw(2) << level;
     oss.fill(' ');
-    oss << " Lives: " << livesLeft << " Health: " << health << "%" << " Ammo: " << ammo << setw(4) << " Bonus: " << bonusPoints;
+    oss << " Lives: " << livesLeft << " Health: ";
+    oss.setf(ios::fixed);
+    oss.precision(0);
+    oss << health << "%" << " Ammo: " << ammo << setw(4) << " Bonus: " << bonusPoints;
     string s = oss.str();
     
     setGameStatText(s);
