@@ -28,6 +28,7 @@ int StudentWorld::init()
     string curLevel = "level";
     if (getLevel() < 10) curLevel += "0" + to_string(getLevel()) + ".txt";
     else curLevel += to_string(getLevel()) + ".txt";
+    curLevel = "level00.txt"; // TEST
     
     Level lev(assetPath());
     Level::LoadResult result = lev.loadLevel(curLevel);
@@ -88,6 +89,7 @@ int StudentWorld::init()
             }
         }
     }
+    actors.push_back(new RegularThiefBot(2,8,this));
         
     return GWSTATUS_CONTINUE_GAME;
 }
@@ -294,15 +296,31 @@ bool StudentWorld::existsClearShotToPlayer(int x, int y, int dx, int dy) const {
         if (player->getX() != x) {
             return false;
         } else {
-            for (int i = y; i < player->getY(); i++) {
-                std::vector<Actor*>::const_iterator it;
-                it = actors.begin();
-                while (it != actors.end()) {
-                    if ((*it)->getY() == i && (*it)->getX() == x && ((*it)->stopsPea() || (*it)->isDamageable())) {
-                        return false;
+            if (dy == 1) {
+                if (player->getY() < y) return false;
+                for (int i = y; i < player->getY(); i++) {
+                    std::vector<Actor*>::const_iterator it;
+                    it = actors.begin();
+                    while (it != actors.end()) {
+                        if ((*it)->getY() == i && (*it)->getX() == x && ((*it)->stopsPea() || (*it)->isDamageable())) {
+                            return false;
+                        }
+                                
+                        it++;
                     }
-                            
-                    it++;
+                }
+            } else if (dy == -1) {
+                if (player->getY() > y) return false;
+                for (int i = y; i > player->getY(); i--) {
+                    std::vector<Actor*>::const_iterator it;
+                    it = actors.begin();
+                    while (it != actors.end()) {
+                        if ((*it)->getY() == i && (*it)->getX() == x && ((*it)->stopsPea() || (*it)->isDamageable())) {
+                            return false;
+                        }
+                                
+                        it++;
+                    }
                 }
             }
         }
@@ -310,15 +328,31 @@ bool StudentWorld::existsClearShotToPlayer(int x, int y, int dx, int dy) const {
         if (player->getY() != y) {
             return false;
         } else {
-            for (int i = x; i < player->getX(); i++) {
-                std::vector<Actor*>::const_iterator it;
-                it = actors.begin();
-                while (it != actors.end()) {
-                    if ((*it)->getX() == i && (*it)->getY() == y && ((*it)->stopsPea() || (*it)->isDamageable())) {
-                        return false;
+            if (dx == 1) {
+                if (player->getX() < x) return false;
+                for (int i = x; i < player->getX(); i++) {
+                    std::vector<Actor*>::const_iterator it;
+                    it = actors.begin();
+                    while (it != actors.end()) {
+                        if ((*it)->getX() == i && (*it)->getY() == y && ((*it)->stopsPea() || (*it)->isDamageable())) {
+                            return false;
+                        }
+                                
+                        it++;
                     }
-                            
-                    it++;
+                }
+            } else if (dx == -1) {
+                if (player->getX() > x) return false;
+                for (int i = x; i > player->getX(); i--) {
+                    std::vector<Actor*>::const_iterator it;
+                    it = actors.begin();
+                    while (it != actors.end()) {
+                        if ((*it)->getX() == i && (*it)->getY() == y && ((*it)->stopsPea() || (*it)->isDamageable())) {
+                            return false;
+                        }
+                                
+                        it++;
+                    }
                 }
             }
         }

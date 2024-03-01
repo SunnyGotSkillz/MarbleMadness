@@ -119,14 +119,14 @@ void Goodie::doSomething() {
         int x = goodie->getX();
         int y = goodie->getY();
         if (getWorld()->isPlayerColocatedWith(x, y) && !stolen) {
-            if (type == 0) { // EXTRA LIFE
-                getWorld()->increaseScore(1000);
+            if (getScore() == 1000) { // EXTRA LIFE
+                getWorld()->increaseScore(getScore());
                 getWorld()->incLives();
-            } else if (type == 1) {
-                getWorld()->increaseScore(500);
+            } else if (getScore() == 500) { // RESTORE HEALTH
+                getWorld()->increaseScore(getScore());
                 getWorld()->restorePlayerHealth();
-            } else if (type == 2) {
-                getWorld()->increaseScore(100);
+            } else if (getScore() == 100) { // AMMO
+                getWorld()->increaseScore(getScore());
                 getWorld()->increaseAmmo();
             }
             
@@ -146,6 +146,20 @@ void Exit::doSomething() {
         getWorld()->playSound(SOUND_FINISHED_LEVEL);
         getWorld()->increaseScore(2000);
         getWorld()->setLevelFinished();
+    }
+}
+
+void Robot::damage(int damageAmt) {
+    setHitPoints(getHitPoints()-damageAmt);
+    
+    if (getHitPoints() <= 0) {
+        getWorld()->playSound(SOUND_ROBOT_DIE);
+        
+        setDead();
+        setVisible(false);
+        getWorld()->increaseScore(m_score);
+    } else {
+        getWorld()->playSound(SOUND_ROBOT_IMPACT);
     }
 }
 
@@ -197,22 +211,95 @@ void RageBot::doSomething() {
     }
 }
 
-
-void Robot::damage(int damageAmt) {
-    setHitPoints(getHitPoints()-damageAmt);
+void ThiefBot::doSomething() {
+    if (!isAlive()) return;
     
-    if (getHitPoints() <= 0) {
-        getWorld()->playSound(SOUND_ROBOT_DIE);
-        
-        setDead();
-        setVisible(false);
-        getWorld()->increaseScore(m_score);
+    Actor* goodie = getWorld()->getColocatedStealable(getX(), getY());
+    if (!pickedUpGoodie && goodie != nullptr) {
+        int chanceStealGoodie = rand() % 10 + 1;
+        if (chanceStealGoodie == 1) {
+            getWorld()->playSound(SOUND_ROBOT_MUNCH);
+            pickedUpGoodie = true;
+            stolenGoodie = goodie;
+            goodie->setStolen(true);
+            goodie->setVisible(false);
+            return;
+            //goodie->setDead();
+        }
+    }
+    
+    if (currDistance != distanceBeforeTurning) {
+        if (getDirection() == left) {
+            if (getWorld()->canAgentMoveTo(this, getX(), getY(), -1, 0)) moveTo(getX()-1, getY());
+            else chooseNewDirection();
+        } else if (getDirection() == right) {
+            if (getWorld()->canAgentMoveTo(this, getX(), getY(), 1, 0)) moveTo(getX()+1, getY());
+            else chooseNewDirection();
+        } else if (getDirection() == down) {
+            if (getWorld()->canAgentMoveTo(this, getX(), getY(), 0, -1)) moveTo(getX(), getY()-1);
+            else chooseNewDirection();
+        } else {
+            if (getWorld()->canAgentMoveTo(this, getX(), getY(), 0, 1)) moveTo(getX(), getY()+1);
+            else chooseNewDirection();
+        }
     } else {
-        getWorld()->playSound(SOUND_ROBOT_IMPACT);
+        chooseNewDirection();
     }
 }
 
+void ThiefBot::chooseNewDirection() {
+    distanceBeforeTurning = rand() % 6 + 1;
+    int dirs[] = {up,down,left,right};
+    int d = dirs[rand() % 6 + 1];
+    
+    int i = 0;
+    while (i < 4) {
+        if (d == up) {
+            if (getWorld()->canAgentMoveTo(this, getX(), getY(), 0, 1)) {
+                setDirection(d);
+                moveTo(getX(), getY()+1);
+                break;
+            } else d = (d+90) % 360;
+        } else if (d == right) {
+            if (getWorld()->canAgentMoveTo(this, getX(), getY(), 1, 0)) {
+                setDirection(d);
+                moveTo(getX()+1, getY());
+                break;
+            } else d = (d+90) % 360;
+        } else if (d == left) {
+            if (getWorld()->canAgentMoveTo(this, getX(), getY(), -1, 0)) {
+                setDirection(d);
+                moveTo(getX()-1, getY());
+                break;
+            } else d = (d+90) % 360;
+            
+        } else if (d == down) {
+            if (getWorld()->canAgentMoveTo(this, getX(), getY(), 0, -1)) {
+                setDirection(d);
+                moveTo(getX(), getY()-1);
+                break;
+            } else d = (d+90) % 360;
+        }
+        
+        i++;
+    }
+    
+    if (i == 4) setDirection(d % 360);
+}
 
+void RegularThiefBot::doSomething() {
+    ThiefBot::doSomething();
+}
+
+void ThiefBot::damage(int damageAmt) {
+    Robot::damage(damageAmt);
+    if (pickedUpGoodie && !isAlive()) {
+        stolenGoodie->moveTo(getX(), getY());
+        //getWorld()->addActor(stolenGoodie);
+        stolenGoodie->setVisible(true);
+        stolenGoodie->setStolen(false);
+    }
+}
 
 void Robot::firePea() {
     if (getDirection() == up) {

@@ -25,8 +25,8 @@ public:
     StudentWorld* getWorld() { return world; }
     bool isAlive() const { return alive; }
     void setDead() { alive = false; }
-    
     virtual void damage(int damageAmt) { hitPoints -= damageAmt; }
+    
     virtual bool stopsPea() const { return false; }
     virtual bool isDamageable() const { return false; }
     virtual bool allowsAgentColocation() const { return false; }
@@ -127,7 +127,8 @@ class PickupableItem : public Actor {
 public:
     PickupableItem(StudentWorld* world, int startX, int startY, int imageID, int score) : Actor(imageID, startX, startY, none, world) { m_score = score; }
     virtual void doSomething();
-    virtual bool allowsAgentColocation() const { return true; };
+    virtual bool allowsAgentColocation() const { return true; }
+    int getScore() const { return m_score; }
 private:
     int m_score;
 };
@@ -145,34 +146,25 @@ public:
     }
     virtual void doSomething();
     virtual bool isStealable() const { return true; }
-
-    // Set whether this goodie is currently stolen.
     void setStolen(bool status) { stolen = status; }
-    void setType(int goodie) { type = goodie; }
+    
 private:
     bool stolen;
-    int type; // 0: Extra life, 1: Restore health, 2: Ammo
 };
 
 class ExtraLifeGoodie : public Goodie {
 public:
-    ExtraLifeGoodie(int startX, int startY, StudentWorld* world) : Goodie(world, startX, startY, IID_EXTRA_LIFE, 1000) {
-        setType(0);
-    }
+    ExtraLifeGoodie(int startX, int startY, StudentWorld* world) : Goodie(world, startX, startY, IID_EXTRA_LIFE, 1000) {}
 };
 
 class RestoreHealthGoodie : public Goodie {
 public:
-    RestoreHealthGoodie(int startX, int startY, StudentWorld* world) : Goodie(world, startX, startY, IID_RESTORE_HEALTH, 500) {
-        setType(1);
-    }
+    RestoreHealthGoodie(int startX, int startY, StudentWorld* world) : Goodie(world, startX, startY, IID_RESTORE_HEALTH, 500) {}
 };
 
 class AmmoGoodie : public Goodie {
 public:
-    AmmoGoodie(int startX, int startY, StudentWorld* world) : Goodie(world, startX, startY, IID_AMMO, 100) {
-        setType(2);
-    }
+    AmmoGoodie(int startX, int startY, StudentWorld* world) : Goodie(world, startX, startY, IID_AMMO, 100) {}
 };
 
 class Robot : public Agent {
@@ -182,11 +174,11 @@ public:
         setHitPoints(hitPoints);
     }
     virtual void doSomething() const { return; }
-    virtual bool isDamageable() const { return true; };
+    virtual bool isDamageable() const { return true; }
     virtual void damage(int damageAmt);
-    virtual bool canPushMarbles() const { return false; };
+    virtual bool canPushMarbles() const { return false; }
     virtual bool needsClearShot() const { return true; }
-    virtual bool isShootingRobot() const { return true; };
+    virtual bool isShootingRobot() const { return true; }
 private:
     int m_score;
     
@@ -197,6 +189,36 @@ class RageBot : public Robot {
 public:
     RageBot(int startX, int startY, int startDir, StudentWorld* world) : Robot(world, startX, startY, IID_RAGEBOT, 10, 100, startDir) {}
     virtual void doSomething();
+};
+
+class ThiefBot : public Robot {
+public:
+    ThiefBot(int startX, int startY, int imageID, int hitPoints, int score, StudentWorld* world) : Robot(world, startX, startY, imageID, hitPoints, score, right) {
+        distanceBeforeTurning = rand() % 6 + 1;
+        currDistance = 0;
+        dir = right;
+        pickedUpGoodie = false;
+        stolenGoodie = nullptr;
+    }
+    virtual void doSomething();
+    virtual bool countsInFactoryCensus() const { return true; }
+    virtual void damage(int damageAmt);
+private:
+    int distanceBeforeTurning;
+    int currDistance;
+    int dir;
+    bool pickedUpGoodie;
+    Actor* stolenGoodie;
+    
+    void chooseNewDirection();
+};
+
+class RegularThiefBot : public ThiefBot
+{
+public:
+    RegularThiefBot(int startX, int startY, StudentWorld* world) : ThiefBot(startX, startY, IID_THIEFBOT, 5, 10, world) {}
+    virtual void doSomething();
+    virtual bool isShootingRobot() const { return false; }
 };
 
 
