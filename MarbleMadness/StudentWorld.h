@@ -22,6 +22,7 @@ public:
     void addActor(Actor* a);
     bool swallowSwallowable(Actor* a);
     Actor* getColocatedStealable(int x, int y) const;
+    bool doFactoryCensus(int x, int y, int distance, int& count) const;
     void restorePlayerHealth() { player->setHitPoints(20); }
     void increaseAmmo() { player->setPeas(player->getPeas() + 20); }
     bool anyCrystals() const { return crystalCount > 0; }

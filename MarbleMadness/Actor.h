@@ -3,6 +3,7 @@
 
 #include "GraphObject.h"
 #include "GameConstants.h"
+#include <random>
 
 class StudentWorld;
 
@@ -29,6 +30,7 @@ public:
     virtual bool canBePushed() const { return false; }
     virtual bool isSwallowable() const { return false; }
     virtual bool isStealable() const { return false; }
+    virtual bool countsInFactoryCensus() const { return false; };
 private:
     int hitPoints;
     StudentWorld* world;
@@ -164,6 +166,80 @@ public:
     AmmoGoodie(int startX, int startY, StudentWorld* world) : Goodie(world, startX, startY, IID_AMMO, 100) {
         setType(2);
     }
+};
+
+class Robot : public Agent {
+public:
+    Robot(StudentWorld* world, int startX, int startY, int imageID, int hitPoints, int score, int startDir) : Agent(imageID, startX, startY, startDir, world) {
+        m_score = score;
+        setHitPoints(hitPoints);
+    }
+    virtual void doSomething();
+    virtual bool isDamageable() const { return true; };
+    virtual void damage(int damageAmt);
+    virtual bool canPushMarbles() const { return false; };
+
+      // Does this robot shoot?
+    virtual bool isShootingRobot() const { return true; };
+private:
+    int m_score;
+};
+
+class RageBot : public Robot {
+public:
+    RageBot(int startX, int startY, int startDir, StudentWorld* world) : Robot(world, startX, startY, IID_RAGEBOT, 10, 100, startDir) {}
+    virtual void doSomething();
+};
+
+class ThiefBot : public Robot {
+public:
+    ThiefBot(int startX, int startY, int imageID, int hitPoints, int score, StudentWorld* world) : Robot(world, startX, startY, imageID, hitPoints, score, right) {
+        distanceBeforeTurning = rand() % 6 + 1;
+        currDistance = 0;
+        dir = right;
+        pickedUpGoodie = false;
+        stolenGoodie = nullptr;
+    }
+    virtual void doSomething();
+    virtual bool countsInFactoryCensus() const { return true; }
+    virtual void damage(int damageAmt);
+private:
+    int distanceBeforeTurning;
+    int currDistance;
+    int dir;
+    bool pickedUpGoodie;
+    Actor* stolenGoodie;
+    
+    void chooseNewDirection();
+};
+
+class RegularThiefBot : public ThiefBot
+{
+public:
+    RegularThiefBot(int startX, int startY, StudentWorld* world) : ThiefBot(startX, startY, IID_THIEFBOT, 5, 10, world) {}
+    virtual void doSomething();
+    virtual bool isShootingRobot() const { return false; }
+};
+
+class MeanThiefBot : public ThiefBot
+{
+public:
+    MeanThiefBot(int startX, int startY, StudentWorld* world) : ThiefBot(startX, startY, IID_MEAN_THIEFBOT, 8, 20, world) {}
+    virtual void doSomething();
+};
+
+class ThiefBotFactory : public Actor {
+public:
+    enum ProductType { REGULAR, MEAN };
+
+    ThiefBotFactory(int startX, int startY, StudentWorld* world, ProductType type) : Actor(IID_ROBOT_FACTORY, startX, startY, none, world) {
+        m_type = type;
+    }
+    virtual void doSomething();
+    virtual bool stopsPea() const { return true; }
+    virtual bool countsInFactoryCensus() const { return true; }
+private:
+    ProductType m_type;
 };
 
 #endif // ACTOR_H_

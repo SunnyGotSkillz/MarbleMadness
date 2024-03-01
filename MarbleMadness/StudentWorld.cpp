@@ -3,6 +3,7 @@
 #include <string>
 #include <sstream>
 #include <iomanip>
+#include <algorithm>
 using namespace std;
 
 GameWorld* createStudentWorld(string assetPath)
@@ -71,6 +72,18 @@ int StudentWorld::init()
             } else if (item == Level::ammo) {
                 // AMMO GOODIE at (x,y)
                 actors.push_back(new AmmoGoodie(x, y, this));
+            } else if (item == Level::vert_ragebot) {
+                // VERT RAGEBOT at (x,y)
+                actors.push_back(new RageBot(x, y, Actor::down, this));
+            } else if (item == Level::horiz_ragebot) {
+                // HORIZ RAGEBOT at (x,y)
+                actors.push_back(new RageBot(x, y, Actor::right, this));
+            } else if (item == Level::thiefbot_factory) {
+                // NORMAL THIEFBOT FACTORY at (x,y)
+                actors.push_back(new ThiefBotFactory(x, y, this, ThiefBotFactory::REGULAR));
+            } else if (item == Level::mean_thiefbot_factory) {
+                // MEAN THIEFBOT FACTORY at (x,y)
+                actors.push_back(new ThiefBotFactory(x, y, this, ThiefBotFactory::MEAN));
             }
         }
     }
@@ -78,11 +91,7 @@ int StudentWorld::init()
     return GWSTATUS_CONTINUE_GAME;
 }
 
-int StudentWorld::move()
-{
-    // This code is here merely to allow the game to build, run, and terminate after you type q
-    setGameStatText("Game will end when you type q");
-    
+int StudentWorld::move() {
     // Give player a chance to do something
     if (player->isAlive()) player->doSomething();
     if (!(player->isAlive())) {
@@ -94,6 +103,8 @@ int StudentWorld::move()
     it = actors.begin();
     while (it != actors.end()) {
         if ((*it)->isAlive()) { // check if actor is alive because they may have died earlier in the tick
+            // TODO: ONLY LET ROBOTS MOVE DURING SPECIFIC TICK
+            
             (*it)->doSomething();
             
             if (!(player->isAlive())) { // player died after actor did something
@@ -177,18 +188,6 @@ bool StudentWorld::canAgentMoveTo(Agent *agent, int x, int y, int dx, int dy) co
             }
             return false;
         }
-        if ((*it)->allowsAgentColocation() && ((*it)->getX()) == x+dx && ((*it)->getY()) == y+dy) {
-            if ((*it)->allowsAgentColocation() && !(*it)->isStealable()) { // crystal or exit
-                if (anyCrystals()) { // crystal
-                    
-                } else { // exit
-                    
-                }
-            }
-            if ((*it)->allowsAgentColocation() && (*it)->isStealable()) { // goodie
-            }
-            return true;
-        }
         
         it++;
     }
@@ -258,6 +257,9 @@ bool StudentWorld::damageSomething(Actor* a, int damageAmt) { // only pea
     it = actors.begin();
     bool factory = false;
     while (it != actors.end()) {
+        if (player->getX() == a->getX() && player->getY() == a->getY()) {
+            player->damage(damageAmt);
+        }
         if (((*it)->getX()) == a->getX() && ((*it)->getY()) == a->getY() && (*it)->isDamageable()) {
             // marble, robot, player
             (*it)->damage(damageAmt);
@@ -272,6 +274,31 @@ bool StudentWorld::damageSomething(Actor* a, int damageAmt) { // only pea
     
     if (factory) return true;
     return false;
+}
+
+bool StudentWorld::doFactoryCensus(int x, int y, int distance, int& count) const {
+    std::vector<Actor*>::const_iterator it;
+    count = 0;
+    
+    int x1 = max(0, x-distance);
+    int x2 = min(VIEW_WIDTH, x+distance);
+    int y1 = max(0, y-distance);
+    int y2 = min(VIEW_HEIGHT, y+distance);
+    for (int a = x1; a <= x2; a++) {
+        for (int b = y1; b <= y2; b++) {
+            it = actors.begin();
+            while (it != actors.end()) {
+                if ((*it)->getX() == a && (*it)->getY() == b && (*it)->countsInFactoryCensus()) {
+                    if (a == x && b == y) return false;
+                    else count++;
+                }
+                
+                it++;
+            }
+        }
+    }
+    
+    return count > 0;
 }
 
 void StudentWorld::setDisplayText() {
