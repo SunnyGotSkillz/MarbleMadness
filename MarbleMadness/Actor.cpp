@@ -112,13 +112,13 @@ void PickupableItem::doSomething() {
 }
 
 void Goodie::doSomething() {
-    if (!isAlive()) return;
+    if (isStolen() || !isAlive()) return;
     
     Actor* goodie = getWorld()->getColocatedStealable(getX(), getY());
     if (goodie != nullptr) {
         int x = goodie->getX();
         int y = goodie->getY();
-        if (getWorld()->isPlayerColocatedWith(x, y) && !stolen) {
+        if (getWorld()->isPlayerColocatedWith(x, y) && !isStolen()) {
             if (getScore() == 1000) { // EXTRA LIFE
                 getWorld()->increaseScore(getScore());
                 getWorld()->incLives();
@@ -212,7 +212,6 @@ void RageBot::doSomething() {
 }
 
 void ThiefBot::doSomething() {
-    if (!isAlive()) return;
     
     Actor* goodie = getWorld()->getColocatedStealable(getX(), getY());
     if (!pickedUpGoodie && goodie != nullptr) {
@@ -224,7 +223,6 @@ void ThiefBot::doSomething() {
             goodie->setStolen(true);
             goodie->setVisible(false);
             return;
-            //goodie->setDead();
         }
     }
     
@@ -288,6 +286,7 @@ void ThiefBot::chooseNewDirection() {
 }
 
 void RegularThiefBot::doSomething() {
+    if (!isAlive()) return;
     ThiefBot::doSomething();
 }
 
@@ -295,13 +294,14 @@ void ThiefBot::damage(int damageAmt) {
     Robot::damage(damageAmt);
     if (pickedUpGoodie && !isAlive()) {
         stolenGoodie->moveTo(getX(), getY());
-        //getWorld()->addActor(stolenGoodie);
         stolenGoodie->setVisible(true);
         stolenGoodie->setStolen(false);
     }
 }
 
-void Robot::firePea() {
+void MeanThiefBot::doSomething() {
+    if (!isAlive()) return;
+    
     if (getDirection() == up) {
         if (getWorld()->existsClearShotToPlayer(getX(), getY()+1, 0, 1)) {
             Actor* pea = new Pea(getX(), getY()+1, up, getWorld());
@@ -329,6 +329,30 @@ void Robot::firePea() {
             getWorld()->addActor(pea);
             getWorld()->playSound(SOUND_ENEMY_FIRE);
             return;
+        }
+    }
+    
+    ThiefBot::doSomething();
+}
+
+void ThiefBotFactory::doSomething() {
+    int num = 0;
+    if (getWorld()->doFactoryCensus(getX(), getY(), 3, num)) {
+        if (num < 3) {
+            int randNum = rand() % 50 + 1;
+            if (randNum == 1) {
+                ThiefBot* thiefBot;
+                if (m_type == ThiefBotFactory::REGULAR) {
+                    getWorld()->playSound(SOUND_ROBOT_BORN);
+                    thiefBot = new RegularThiefBot(getX(), getY(), getWorld());
+                    getWorld()->addActor(thiefBot);
+                }
+                else if (m_type == ThiefBotFactory::MEAN) {
+                    getWorld()->playSound(SOUND_ROBOT_BORN);
+                    thiefBot = new MeanThiefBot(getX(), getY(), getWorld());
+                    getWorld()->addActor(thiefBot);
+                }
+            }
         }
     }
 }

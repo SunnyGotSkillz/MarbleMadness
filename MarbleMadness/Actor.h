@@ -141,15 +141,9 @@ public:
 
 class Goodie : public PickupableItem {
 public:
-    Goodie(StudentWorld* world, int startX, int startY, int imageID, int score) : PickupableItem(world, startX, startY, imageID, score) {
-        stolen = false;
-    }
+    Goodie(StudentWorld* world, int startX, int startY, int imageID, int score) : PickupableItem(world, startX, startY, imageID, score) {}
     virtual void doSomething();
     virtual bool isStealable() const { return true; }
-    void setStolen(bool status) { stolen = status; }
-    
-private:
-    bool stolen;
 };
 
 class ExtraLifeGoodie : public Goodie {
@@ -173,7 +167,7 @@ public:
         m_score = score;
         setHitPoints(hitPoints);
     }
-    virtual void doSomething() const { return; }
+    virtual void doSomething() { return; }
     virtual bool isDamageable() const { return true; }
     virtual void damage(int damageAmt);
     virtual bool canPushMarbles() const { return false; }
@@ -181,8 +175,6 @@ public:
     virtual bool isShootingRobot() const { return true; }
 private:
     int m_score;
-    
-    void firePea();
 };
 
 class RageBot : public Robot {
@@ -203,14 +195,13 @@ public:
     virtual void doSomething();
     virtual bool countsInFactoryCensus() const { return true; }
     virtual void damage(int damageAmt);
+    void chooseNewDirection();
 private:
     int distanceBeforeTurning;
     int currDistance;
     int dir;
     bool pickedUpGoodie;
     Actor* stolenGoodie;
-    
-    void chooseNewDirection();
 };
 
 class RegularThiefBot : public ThiefBot
@@ -221,6 +212,24 @@ public:
     virtual bool isShootingRobot() const { return false; }
 };
 
+class MeanThiefBot : public ThiefBot
+{
+public:
+    MeanThiefBot(int startX, int startY, StudentWorld* world) : ThiefBot(startX, startY, IID_MEAN_THIEFBOT, 8, 20, world) {}
+    virtual void doSomething();
+};
 
+class ThiefBotFactory : public Actor {
+public:
+    enum ProductType { REGULAR, MEAN };
+
+    ThiefBotFactory(int startX, int startY, StudentWorld* world, ProductType type) : Actor(IID_ROBOT_FACTORY, startX, startY, none, world) {
+        m_type = type;
+    }
+    virtual void doSomething();
+    virtual bool stopsPea() const { return true; }
+private:
+    ProductType m_type;
+};
 
 #endif // ACTOR_H_

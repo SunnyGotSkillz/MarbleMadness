@@ -6,14 +6,11 @@
 #include <algorithm>
 using namespace std;
 
-GameWorld* createStudentWorld(string assetPath)
-{
+GameWorld* createStudentWorld(string assetPath) {
 	return new StudentWorld(assetPath);
 }
 
-StudentWorld::StudentWorld(string assetPath)
-: GameWorld(assetPath)
-{
+StudentWorld::StudentWorld(string assetPath) : GameWorld(assetPath) {
     player = nullptr;
     actors.clear();
 }
@@ -22,13 +19,11 @@ StudentWorld::~StudentWorld() {
     cleanUp();
 }
 
-int StudentWorld::init()
-{
+int StudentWorld::init() {
     // create level data file string
     string curLevel = "level";
     if (getLevel() < 10) curLevel += "0" + to_string(getLevel()) + ".txt";
     else curLevel += to_string(getLevel()) + ".txt";
-    curLevel = "level00.txt"; // TEST
     
     Level lev(assetPath());
     Level::LoadResult result = lev.loadLevel(curLevel);
@@ -82,14 +77,13 @@ int StudentWorld::init()
                 actors.push_back(new RageBot(x, y, Actor::right, this));
             } else if (item == Level::thiefbot_factory) {
                 // NORMAL THIEFBOT FACTORY at (x,y)
-                //actors.push_back(new ThiefBotFactory(x, y, this, ThiefBotFactory::REGULAR));
+                actors.push_back(new ThiefBotFactory(x, y, this, ThiefBotFactory::REGULAR));
             } else if (item == Level::mean_thiefbot_factory) {
                 // MEAN THIEFBOT FACTORY at (x,y)
-                //actors.push_back(new ThiefBotFactory(x, y, this, ThiefBotFactory::MEAN));
+                actors.push_back(new ThiefBotFactory(x, y, this, ThiefBotFactory::MEAN));
             }
         }
     }
-    actors.push_back(new RegularThiefBot(2,8,this));
         
     return GWSTATUS_CONTINUE_GAME;
 }
@@ -107,15 +101,13 @@ int StudentWorld::move() {
     }
     
     // Give each actor a chance to do something
-    std::vector<Actor*>::iterator it;
-    it = actors.begin();
-    while (it != actors.end()) {
-        if (!(*it)->isStolen() && (*it)->isAlive()) { // check if actor is alive because they may have died earlier in the tick
-            if ((*it)->isDamageable() && !(*it)->isSwallowable()) {
+    for (int i = 0; i < actors.size(); ++i) {
+        if ((actors[i])->isAlive()) { // check if actor is alive because they may have died earlier in the tick
+            if ((actors[i])->isDamageable() && !(actors[i])->isSwallowable()) {
                 if (currTick == ticks) {
-                    (*it)->doSomething();
+                    (actors[i])->doSomething();
                 }
-            } else (*it)->doSomething();
+            } else (actors[i])->doSomething();
             
             if (!(player->isAlive())) { // player died after actor did something
                 decLives();
@@ -124,16 +116,17 @@ int StudentWorld::move() {
             
             if (levelFinished) {
                 increaseScore(bonusPoints);
+                playSound(SOUND_FINISHED_LEVEL);
                 return GWSTATUS_FINISHED_LEVEL;
             }
         }
-        
-        it++;
     }
     
     if (currTick == ticks) currTick = 0;
     
     // Delete any dead actors
+    std::vector<Actor*>::iterator it;
+    it = actors.begin();
     it = actors.end();
     it--;
     while (it != actors.begin()) {
@@ -164,14 +157,14 @@ int StudentWorld::move() {
     
     if (levelFinished) {
         increaseScore(bonusPoints);
+        playSound(SOUND_FINISHED_LEVEL);
         return GWSTATUS_FINISHED_LEVEL;
     }
     
 	return GWSTATUS_CONTINUE_GAME;
 }
 
-void StudentWorld::cleanUp()
-{
+void StudentWorld::cleanUp() {
     if (actors.end() == actors.begin()) return; // empty vector
     
     std::vector<Actor*>::iterator it;
@@ -239,7 +232,7 @@ Actor* StudentWorld::getColocatedStealable(int x, int y) const {
     std::vector<Actor*>::const_iterator it;
     it = actors.begin();
     while (it != actors.end()) {
-        if ((*it)->allowsAgentColocation() && (*it)->isStealable() && ((*it)->getX()) == x && ((*it)->getY()) == y) {
+        if (!(*it)->isStolen() && (*it)->allowsAgentColocation() && (*it)->isStealable() && ((*it)->getX()) == x && ((*it)->getY()) == y) {
             return *it;
         }
         it++;
@@ -269,7 +262,7 @@ void StudentWorld::addActor(Actor *a) {
 bool StudentWorld::damageSomething(Actor* a, int damageAmt) { // only pea
     std::vector<Actor*>::iterator it;
     it = actors.begin();
-    bool factory = false;
+    bool factoryOrWall = false;
     while (it != actors.end()) {
         if (player->getX() == a->getX() && player->getY() == a->getY()) {
             player->damage(damageAmt);
@@ -281,13 +274,13 @@ bool StudentWorld::damageSomething(Actor* a, int damageAmt) { // only pea
             return true;
         } else if (((*it)->getX()) == a->getX() && ((*it)->getY()) == a->getY() && (*it)->stopsPea()) {
             // wall or robot factory
-            factory = true;
+            factoryOrWall = true;
         }
         
         it++;
     }
     
-    if (factory) return true;
+    if (factoryOrWall) return true;
     return false;
 }
 
@@ -362,7 +355,6 @@ bool StudentWorld::existsClearShotToPlayer(int x, int y, int dx, int dy) const {
 }
 
 bool StudentWorld::doFactoryCensus(int x, int y, int distance, int& count) const {
-    std::vector<Actor*>::const_iterator it;
     count = 0;
     
     int x1 = max(0, x-distance);
@@ -371,6 +363,7 @@ bool StudentWorld::doFactoryCensus(int x, int y, int distance, int& count) const
     int y2 = min(VIEW_HEIGHT, y+distance);
     for (int a = x1; a <= x2; a++) {
         for (int b = y1; b <= y2; b++) {
+            std::vector<Actor*>::const_iterator it;
             it = actors.begin();
             while (it != actors.end()) {
                 if ((*it)->getX() == a && (*it)->getY() == b && (*it)->countsInFactoryCensus()) {

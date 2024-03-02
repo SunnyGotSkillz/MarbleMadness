@@ -6,11 +6,13 @@
 #include "Actor.h"
 #include <string>
 #include <vector>
+using namespace std;
 
 class StudentWorld : public GameWorld {
 public:
     StudentWorld(std::string assetPath);
     ~StudentWorld();
+    
     virtual int init();
     virtual int move();
     virtual void cleanUp();
