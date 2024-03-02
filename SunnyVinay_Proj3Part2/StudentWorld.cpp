@@ -1,5 +1,3 @@
-// StudentWorld.cpp
-
 #include "StudentWorld.h"
 #include "GameConstants.h"
 #include <string>
@@ -18,7 +16,7 @@ StudentWorld::StudentWorld(string assetPath) : GameWorld(assetPath) {
 }
 
 StudentWorld::~StudentWorld() {
-    cleanUp();  // free up space allocated by actors and player
+    cleanUp();
 }
 
 int StudentWorld::init() {
@@ -58,7 +56,7 @@ int StudentWorld::init() {
             } else if (item == Level::crystal) {
                 // CRYSTAL at (x,y)
                 actors.push_back(new Crystal(x, y, this));
-                crystalCount++; // increase total crystal count
+                crystalCount++;
             } else if (item == Level::exit) {
                 // EXIT at (x,y)
                 actors.push_back(new Exit(x, y, this));
@@ -91,7 +89,7 @@ int StudentWorld::init() {
 }
 
 int StudentWorld::move() {
-    int ticks = (28 - getLevel()) / 4; // calculate which tick robots can act on
+    int ticks = (28 - getLevel()) / 4;
     if (ticks < 3) ticks = 3;
     currTick++;
     
@@ -105,18 +103,18 @@ int StudentWorld::move() {
     // Give each actor a chance to do something
     for (int i = 0; i < actors.size(); ++i) {
         if ((actors[i])->isAlive()) { // check if actor is alive because they may have died earlier in the tick
-            if ((actors[i])->isDamageable() && !(actors[i])->isSwallowable()) { // actor is robot
+            if ((actors[i])->isDamageable() && !(actors[i])->isSwallowable()) {
                 if (currTick == ticks) {
-                    (actors[i])->doSomething(); // robots only do something if we hit our target ticks
+                    (actors[i])->doSomething();
                 }
-            } else (actors[i])->doSomething(); // not a robot, do something
+            } else (actors[i])->doSomething();
             
             if (!(player->isAlive())) { // player died after actor did something
                 decLives();
                 return GWSTATUS_PLAYER_DIED;
             }
             
-            if (levelFinished) { // level has been completed
+            if (levelFinished) {
                 increaseScore(bonusPoints);
                 playSound(SOUND_FINISHED_LEVEL);
                 return GWSTATUS_FINISHED_LEVEL;
@@ -148,7 +146,7 @@ int StudentWorld::move() {
         actors.erase(it);
     }
     
-    if (bonusPoints >= 1) bonusPoints--; // remove 1 bonus point per tick
+    if (bonusPoints >= 1) bonusPoints--;
     
     setDisplayText();
     
@@ -157,7 +155,7 @@ int StudentWorld::move() {
         return GWSTATUS_PLAYER_DIED;
     }
     
-    if (levelFinished) { // level is finished
+    if (levelFinished) {
         increaseScore(bonusPoints);
         playSound(SOUND_FINISHED_LEVEL);
         return GWSTATUS_FINISHED_LEVEL;
@@ -208,7 +206,7 @@ bool StudentWorld::canMarbleMoveTo(int x, int y) const {
     std::vector<Actor*>::const_iterator it;
     it = actors.begin();
     while (it != actors.end()) {
-        if (!((*it)->allowsMarbleColocation()) && ((*it)->getX()) == x && ((*it)->getY()) == y) { // marble cannot move to this spot
+        if (!((*it)->allowsMarbleColocation()) && ((*it)->getX()) == x && ((*it)->getY()) == y) {
             return false;
         }
         it++;
@@ -221,7 +219,7 @@ bool StudentWorld::isPlayerColocatedWith(int x, int y) const {
     std::vector<Actor*>::const_iterator it;
     it = actors.begin();
     while (it != actors.end()) {
-        if ((*it)->allowsAgentColocation() && (player->getX()) == x && (player->getY()) == y) { // player is on same spot as actor
+        if ((*it)->allowsAgentColocation() && (player->getX()) == x && (player->getY()) == y) {
             return true;
         }
         it++;
@@ -235,12 +233,12 @@ Actor* StudentWorld::getColocatedStealable(int x, int y) const {
     it = actors.begin();
     while (it != actors.end()) {
         if (!(*it)->isStolen() && (*it)->allowsAgentColocation() && (*it)->isStealable() && ((*it)->getX()) == x && ((*it)->getY()) == y) {
-            return *it; // return stealable goodie
+            return *it;
         }
         it++;
     }
 
-    return nullptr; // no stealable goodie at (x,y)
+    return nullptr;
 }
 
 bool StudentWorld::swallowSwallowable(Actor* a) { // pit only
@@ -258,10 +256,10 @@ bool StudentWorld::swallowSwallowable(Actor* a) { // pit only
 }
 
 void StudentWorld::addActor(Actor *a) {
-    actors.push_back(a); // add actor to vector
+    actors.push_back(a);
 }
 
-bool StudentWorld::damageSomething(Actor* a, int damageAmt) { // pea only
+bool StudentWorld::damageSomething(Actor* a, int damageAmt) { // only pea
     std::vector<Actor*>::iterator it;
     it = actors.begin();
     bool factoryOrWall = false;
@@ -276,42 +274,42 @@ bool StudentWorld::damageSomething(Actor* a, int damageAmt) { // pea only
             return true;
         } else if (((*it)->getX()) == a->getX() && ((*it)->getY()) == a->getY() && (*it)->stopsPea()) {
             // wall or robot factory
-            factoryOrWall = true; // don't return immediately, check if a robot exists on that square
+            factoryOrWall = true;
         }
         
         it++;
     }
     
-    if (factoryOrWall) return true; // robot doesn't exist, but factory/wall does so return true still
+    if (factoryOrWall) return true;
     return false;
 }
 
 bool StudentWorld::existsClearShotToPlayer(int x, int y, int dx, int dy) const {
     if (dy == 1 || dy == -1) {
-        if (player->getX() != x) { // player and pea are not on the same line
+        if (player->getX() != x) {
             return false;
         } else {
-            if (dy == 1) { // pea facing upward
+            if (dy == 1) {
                 if (player->getY() < y) return false;
-                for (int i = y; i < player->getY(); i++) { // check every y-coordinate in that x for obstructions
+                for (int i = y; i < player->getY(); i++) {
                     std::vector<Actor*>::const_iterator it;
                     it = actors.begin();
                     while (it != actors.end()) {
                         if ((*it)->getY() == i && (*it)->getX() == x && ((*it)->stopsPea() || (*it)->isDamageable())) {
-                            return false; // found obstruction -> no clear shot
+                            return false;
                         }
                                 
                         it++;
                     }
                 }
-            } else if (dy == -1) { // pea facing downward
+            } else if (dy == -1) {
                 if (player->getY() > y) return false;
-                for (int i = y; i > player->getY(); i--) { // check every y-coordinate in that x for obstructions
+                for (int i = y; i > player->getY(); i--) {
                     std::vector<Actor*>::const_iterator it;
                     it = actors.begin();
                     while (it != actors.end()) {
                         if ((*it)->getY() == i && (*it)->getX() == x && ((*it)->stopsPea() || (*it)->isDamageable())) {
-                            return false; // found obstruction -> no clear shot
+                            return false;
                         }
                                 
                         it++;
@@ -320,30 +318,30 @@ bool StudentWorld::existsClearShotToPlayer(int x, int y, int dx, int dy) const {
             }
         }
     } else if (dx == 1 || dx == -1) {
-        if (player->getY() != y) { // player and pea are not on the same line
+        if (player->getY() != y) {
             return false;
         } else {
-            if (dx == 1) { // pea facing right
+            if (dx == 1) {
                 if (player->getX() < x) return false;
-                for (int i = x; i < player->getX(); i++) { // check every x-coordinate in that y for obstructions
+                for (int i = x; i < player->getX(); i++) {
                     std::vector<Actor*>::const_iterator it;
                     it = actors.begin();
                     while (it != actors.end()) {
                         if ((*it)->getX() == i && (*it)->getY() == y && ((*it)->stopsPea() || (*it)->isDamageable())) {
-                            return false; // found obstruction -> no clear shot
+                            return false;
                         }
                                 
                         it++;
                     }
                 }
-            } else if (dx == -1) { // pea facing left
+            } else if (dx == -1) {
                 if (player->getX() > x) return false;
-                for (int i = x; i > player->getX(); i--) { // check every x-coordinate in that y for obstructions
+                for (int i = x; i > player->getX(); i--) {
                     std::vector<Actor*>::const_iterator it;
                     it = actors.begin();
                     while (it != actors.end()) {
                         if ((*it)->getX() == i && (*it)->getY() == y && ((*it)->stopsPea() || (*it)->isDamageable())) {
-                            return false; // found obstruction -> no clear shot
+                            return false;
                         }
                                 
                         it++;
@@ -353,26 +351,23 @@ bool StudentWorld::existsClearShotToPlayer(int x, int y, int dx, int dy) const {
         }
     }
     
-    return true; // no obstructions found and pea is in-line with player, so shoot
+    return true;
 }
 
 bool StudentWorld::doFactoryCensus(int x, int y, int distance, int& count) const {
     count = 0;
     
-    // calculate endpoints of factory rectangle without going beyond game borders
     int x1 = max(0, x-distance);
     int x2 = min(VIEW_WIDTH, x+distance);
     int y1 = max(0, y-distance);
     int y2 = min(VIEW_HEIGHT, y+distance);
-    
-    // iterate through every square in this rectangle
     for (int a = x1; a <= x2; a++) {
         for (int b = y1; b <= y2; b++) {
             std::vector<Actor*>::const_iterator it;
             it = actors.begin();
             while (it != actors.end()) {
                 if ((*it)->getX() == a && (*it)->getY() == b && (*it)->countsInFactoryCensus()) {
-                    if (a == x && b == y) return false; // robot is on same square as factory, so don't allow more spawns
+                    if (a == x && b == y) return false;
                     else count++;
                 }
                 
@@ -381,7 +376,7 @@ bool StudentWorld::doFactoryCensus(int x, int y, int distance, int& count) const
         }
     }
     
-    return true; // no robot found on factory square
+    return true;
 }
 
 void StudentWorld::setDisplayText() {

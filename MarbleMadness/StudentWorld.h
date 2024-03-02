@@ -1,3 +1,5 @@
+// StudentWorld.h
+
 #ifndef STUDENTWORLD_H_
 #define STUDENTWORLD_H_
 
@@ -17,30 +19,29 @@ public:
     virtual int move();
     virtual void cleanUp();
     
-    bool damageSomething(Actor* a, int damageAmt);
-    bool canAgentMoveTo(Agent* agent, int x, int y, int dx, int dy) const;
-    bool canMarbleMoveTo(int x, int y) const;
-    bool isPlayerColocatedWith(int x, int y) const;
-    void addActor(Actor* a);
-    bool swallowSwallowable(Actor* a);
-    bool existsClearShotToPlayer(int x, int y, int dx, int dy) const;
-    Actor* getColocatedStealable(int x, int y) const;
-    bool doFactoryCensus(int x, int y, int distance, int& count) const;
-    void restorePlayerHealth() { player->setHitPoints(20); }
-    void increaseAmmo() { player->setPeas(player->getPeas() + 20); }
-    bool anyCrystals() const { return crystalCount > 0; }
-    void decCrystals() { crystalCount--; } 
-    void setLevelFinished() { levelFinished = true; }
-
+    bool damageSomething(Actor* a, int damageAmt);                              // FOR PEAS: DAMAGE ROBOT, MARBLE OR PLAYER
+    bool canAgentMoveTo(Agent* agent, int x, int y, int dx, int dy) const;      // CAN ROBOT/PLAYER MOVE TO SQUARE
+    bool canMarbleMoveTo(int x, int y) const;                                   // CAN MARBLE MOVE TO SQUARE
+    bool isPlayerColocatedWith(int x, int y) const;                             // IS PLAYER ON THIS SQUARE
+    void addActor(Actor* a);                                                    // ADD ACTOR TO WORLD
+    bool swallowSwallowable(Actor* a);                                          // FOR MARBLES: SWALLOW
+    bool existsClearShotToPlayer(int x, int y, int dx, int dy) const;           // ROBOT HAS CLEAR SHOT TO PLAYER
+    Actor* getColocatedStealable(int x, int y) const;                           // GET STEALABLE GOODIE ON THIS SQUARE
+    bool doFactoryCensus(int x, int y, int distance, int& count) const;         // COUNT THIEFBOTS IN FACTORY RANGE
+    void restorePlayerHealth() { player->setHitPoints(20); }                    // RESTORE PLAYER HEALTH GOODIE
+    void increaseAmmo() { player->setPeas(player->getPeas() + 20); }            // AMMO GOODIE
+    bool anyCrystals() const { return crystalCount > 0; }                       // ARE CRYSTALS LEFT IN THIS LEVEL
+    void decCrystals() { crystalCount--; }                                      // PLAYER FOUND 1 CRYSTAL
+    void setLevelFinished() { levelFinished = true; }                           // LEVEL IS FINISHED
 private:
-    std::vector<Actor*> actors;
-    Avatar* player;
-    int bonusPoints;
-    int crystalCount;
-    bool levelFinished;
-    int currTick;
+    std::vector<Actor*> actors;     // all actors
+    Avatar* player;                 // player
+    int bonusPoints;                // bonus points for current level
+    int crystalCount;               // total crystals for this level
+    bool levelFinished;             // level has been completed
+    int currTick;                   // current tick for robot movement
     
-    void setDisplayText();
+    void setDisplayText();          // top display text
 };
 
 #endif // STUDENTWORLD_H_

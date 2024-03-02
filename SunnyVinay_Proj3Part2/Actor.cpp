@@ -1,12 +1,10 @@
-// Actor.cpp
-
 #include "Actor.h"
 #include "StudentWorld.h"
 #include <iostream>
 using namespace std;
 
 void Avatar::doSomething() {
-    if (!isAlive()) return; // player is dead, do nothing
+    if (!isAlive()) return; // avatar is dead, do nothing
     
     // user input
     int ch;
@@ -30,7 +28,7 @@ void Avatar::doSomething() {
                 if (getWorld()->canAgentMoveTo(this, getX(), getY(), 0, -1)) moveTo(getX(), getY()-1);
                 break;
             case KEY_PRESS_ESCAPE:
-                setDead(); // player gives up
+                setDead();
                 break;
             case KEY_PRESS_SPACE:
                 if (getPeas() != 0) {
@@ -48,7 +46,7 @@ void Avatar::doSomething() {
                         pea = new Pea(getX()+1, getY(), right, getWorld());
                     }
                     
-                    getWorld()->addActor(pea); // add pea to the world
+                    getWorld()->addActor(pea);
                 }
                 break;
         }
@@ -58,16 +56,18 @@ void Avatar::doSomething() {
 void Pea::doSomething() {
     if (!isAlive()) return;
     
-    if (getWorld()->damageSomething(this, 2)) { // pea hit agent or wall/factory
+    if (getWorld()->damageSomething(this, 2)) {
+        // pea hit agent or wall/factory
         setDead();
-    } else { // pea should continue
+    } else {
+        // pea can continue
         if (getDirection() == up) {
             moveTo(getX(), getY()+1);
         } else if (getDirection() == down) {
             moveTo(getX(), getY()-1);
         } else if (getDirection() == left) {
             moveTo(getX()-1, getY());
-        } else if (getDirection() == right) {
+        } else { // right
             moveTo(getX()+1, getY());
         }
     }
@@ -75,18 +75,18 @@ void Pea::doSomething() {
 
 void Avatar::damage(int damageAmt) {
     setHitPoints(getHitPoints()-damageAmt);
-    if (getHitPoints() <= 0) { // player is dead
+    if (getHitPoints() <= 0) {
         getWorld()->playSound(SOUND_PLAYER_DIE);
         setDead();
         setVisible(false);
-    } else { // player survived
+    } else {
         getWorld()->playSound(SOUND_PLAYER_IMPACT);
     }
 }
 
 void Marble::damage(int damageAmt) {
     setHitPoints(getHitPoints()-damageAmt);
-    if (getHitPoints() <= 0) { // marble is dead
+    if (getHitPoints() <= 0) {
         setDead();
         setVisible(false);
     }
@@ -103,8 +103,8 @@ void Pit::doSomething() {
 void PickupableItem::doSomething() {
     if (!isAlive()) return;
     
-    if (getWorld()->isPlayerColocatedWith(getX(), getY())) { // player is on same square as item
-        getWorld()->increaseScore(m_score); // increase score by given amount
+    if (getWorld()->isPlayerColocatedWith(getX(), getY())) {
+        getWorld()->increaseScore(m_score);
         setDead();
         getWorld()->playSound(SOUND_GOT_GOODIE);
         getWorld()->decCrystals();
@@ -112,14 +112,14 @@ void PickupableItem::doSomething() {
 }
 
 void Goodie::doSomething() {
-    if (isStolen() || !isAlive()) return; // don't check for players if the goodie has been stolen
+    if (isStolen() || !isAlive()) return;
     
     Actor* goodie = getWorld()->getColocatedStealable(getX(), getY());
     if (goodie != nullptr) {
         int x = goodie->getX();
         int y = goodie->getY();
         if (getWorld()->isPlayerColocatedWith(x, y) && !isStolen()) {
-            doGoodie();     // execute specific goodie action
+            doGoodie();            
             setDead();
             getWorld()->playSound(SOUND_GOT_GOODIE);
             getWorld()->increaseScore(getScore());
@@ -140,12 +140,12 @@ void AmmoGoodie::doGoodie() {
 }
 
 void Exit::doSomething() {
-    if (!getWorld()->anyCrystals()) { // player found all crystals
+    if (!getWorld()->anyCrystals()) {
         setVisible(true);
         getWorld()->playSound(SOUND_REVEAL_EXIT);
     }
     
-    if (getWorld()->isPlayerColocatedWith(getX(), getY()) && !getWorld()->anyCrystals()) { // player is on exit
+    if (getWorld()->isPlayerColocatedWith(getX(), getY()) && !getWorld()->anyCrystals()) {
         getWorld()->playSound(SOUND_FINISHED_LEVEL);
         getWorld()->increaseScore(2000);
         getWorld()->setLevelFinished();
@@ -155,24 +155,24 @@ void Exit::doSomething() {
 void Robot::damage(int damageAmt) {
     setHitPoints(getHitPoints()-damageAmt);
     
-    if (getHitPoints() <= 0) { // robot died
+    if (getHitPoints() <= 0) {
         getWorld()->playSound(SOUND_ROBOT_DIE);
+        
         setDead();
         setVisible(false);
         getWorld()->increaseScore(m_score);
-    } else { // robot survived
+    } else {
         getWorld()->playSound(SOUND_ROBOT_IMPACT);
     }
 }
 
-// HANDLES PEA SHOOTING FUNCTIONALITY (RAGEBOTS AND MEAN THIEFBOTS)
 void Robot::doSomething() {
     if (getDirection() == up) {
-        if (getWorld()->existsClearShotToPlayer(getX(), getY()+1, 0, 1)) { // robot can shoot player
+        if (getWorld()->existsClearShotToPlayer(getX(), getY()+1, 0, 1)) {
             Actor* pea = new Pea(getX(), getY()+1, up, getWorld());
             getWorld()->addActor(pea);
             getWorld()->playSound(SOUND_ENEMY_FIRE);
-            m_justAttacked = true; // robot just attacked player so do nothing else in this tick
+            m_justAttacked = true;
             return;
         }
     } else if (getDirection() == down) {
@@ -205,13 +205,12 @@ void Robot::doSomething() {
 void RageBot::doSomething() {
     if (!isAlive()) return;
     
-    Robot::doSomething(); // shoot pea if possible
-    if (justAttacked()) { // if ragebot just attacked, then do nothing else in this tick
+    Robot::doSomething();
+    if (justAttacked()) {
         setJustAttacked(false);
         return;
     }
     
-    // robot didn't attack, so try to move
     if (getDirection() == left) {
         if (getWorld()->canAgentMoveTo(this, getX(), getY(), -1, 0)) moveTo(getX()-1, getY());
         else setDirection(right);
@@ -228,10 +227,10 @@ void RageBot::doSomething() {
 }
 
 void ThiefBot::damage(int damageAmt) {
-    Robot::damage(damageAmt); // same damage functionality for thiefbots
+    Robot::damage(damageAmt);
     
-    if (pickedUpGoodie && !isAlive()) { // drop stolen goodie if dead
-        stolenGoodie->moveTo(getX(), getY()); // set goodie location to thiefbot death
+    if (pickedUpGoodie && !isAlive()) {
+        stolenGoodie->moveTo(getX(), getY());
         stolenGoodie->setVisible(true);
         stolenGoodie->setStolen(false);
     }
@@ -239,92 +238,73 @@ void ThiefBot::damage(int damageAmt) {
 
 void ThiefBot::doSomething() {
     Actor* goodie = getWorld()->getColocatedStealable(getX(), getY());
-    if (!pickedUpGoodie && goodie != nullptr) { // has not stolen goodie yet and goodie exists on square with thiefbot
+    if (!pickedUpGoodie && goodie != nullptr) {
         int chanceStealGoodie = rand() % 10 + 1;
-        if (chanceStealGoodie == 1) { // 10% chance of stealing in this tick
+        if (chanceStealGoodie == 1) {
             getWorld()->playSound(SOUND_ROBOT_MUNCH);
             pickedUpGoodie = true;
             stolenGoodie = goodie;
             goodie->setStolen(true);
             goodie->setVisible(false);
-            return; // do nothing else in this tick
+            return;
         }
     }
     
-    if (currDistance != distanceBeforeTurning) { // thiefbot should keep going in this direction if possible
+    if (currDistance != distanceBeforeTurning) {
         if (getDirection() == left) {
-            if (getWorld()->canAgentMoveTo(this, getX(), getY(), -1, 0)) {
-                currDistance++;
-                moveTo(getX()-1, getY());
-            }
+            if (getWorld()->canAgentMoveTo(this, getX(), getY(), -1, 0)) moveTo(getX()-1, getY());
             else chooseNewDirection();
         } else if (getDirection() == right) {
-            if (getWorld()->canAgentMoveTo(this, getX(), getY(), 1, 0)) {
-                currDistance++;
-                moveTo(getX()+1, getY());
-            }
+            if (getWorld()->canAgentMoveTo(this, getX(), getY(), 1, 0)) moveTo(getX()+1, getY());
             else chooseNewDirection();
         } else if (getDirection() == down) {
-            if (getWorld()->canAgentMoveTo(this, getX(), getY(), 0, -1)) {
-                currDistance++;
-                moveTo(getX(), getY()-1);
-            }
+            if (getWorld()->canAgentMoveTo(this, getX(), getY(), 0, -1)) moveTo(getX(), getY()-1);
             else chooseNewDirection();
         } else {
-            if (getWorld()->canAgentMoveTo(this, getX(), getY(), 0, 1)) {
-                currDistance++;
-                moveTo(getX(), getY()+1);
-            }
+            if (getWorld()->canAgentMoveTo(this, getX(), getY(), 0, 1)) moveTo(getX(), getY()+1);
             else chooseNewDirection();
         }
-    } else { // thiefbot has moved enough squares, so change direction
+    } else {
         chooseNewDirection();
     }
 }
 
 void RegularThiefBot::doSomething() {
     if (!isAlive()) return;
-    ThiefBot::doSomething(); // same as ThiefBot
+    ThiefBot::doSomething();
 }
 
 void MeanThiefBot::doSomething() {
     if (!isAlive()) return;
     
-    Robot::doSomething(); // shoot peas just like Ragebots
-    if (justAttacked()) {
-        setJustAttacked(false);
-        return;
-    }
-    ThiefBot::doSomething(); // also try to steal goodies and move in the same way as regular thiefbots
+    ThiefBot::doSomething();
+    if (hasGoodie()) return;
+    Robot::doSomething();
 }
 
 void ThiefBot::chooseNewDirection() {
-    currDistance = 0;
     distanceBeforeTurning = rand() % 6 + 1;
     int dirs[] = {up,down,left,right};
-    int d = dirs[rand() % 4]; // choose random direction
+    int d = dirs[rand() % 6 + 1];
     
     int i = 0;
-    while (i < 4) { // starting with the random direction, try every direction until an unobstructed one is found
+    while (i < 4) {
         if (d == up) {
             if (getWorld()->canAgentMoveTo(this, getX(), getY(), 0, 1)) {
                 setDirection(d);
                 moveTo(getX(), getY()+1);
-                currDistance++;
                 break;
             } else d = (d+90) % 360;
         } else if (d == right) {
             if (getWorld()->canAgentMoveTo(this, getX(), getY(), 1, 0)) {
                 setDirection(d);
                 moveTo(getX()+1, getY());
-                currDistance++;
                 break;
             } else d = (d+90) % 360;
         } else if (d == left) {
             if (getWorld()->canAgentMoveTo(this, getX(), getY(), -1, 0)) {
                 setDirection(d);
                 moveTo(getX()-1, getY());
-                currDistance++;
                 break;
             } else d = (d+90) % 360;
             
@@ -332,7 +312,6 @@ void ThiefBot::chooseNewDirection() {
             if (getWorld()->canAgentMoveTo(this, getX(), getY(), 0, -1)) {
                 setDirection(d);
                 moveTo(getX(), getY()-1);
-                currDistance++;
                 break;
             } else d = (d+90) % 360;
         }
@@ -340,15 +319,15 @@ void ThiefBot::chooseNewDirection() {
         i++;
     }
     
-    if (i == 4) setDirection(d % 360); // set to original direction if every direction is obstructed
+    if (i == 4) setDirection(d % 360);
 }
 
 void ThiefBotFactory::doSomething() {
     int num = 0;
-    if (getWorld()->doFactoryCensus(getX(), getY(), 3, num)) { // no thiefbot is on the factory
-        if (num < 3) { // less than 3 thiefbots in range
+    if (getWorld()->doFactoryCensus(getX(), getY(), 3, num)) {
+        if (num < 3) {
             int randNum = rand() % 50 + 1;
-            if (randNum == 1) { // 2% chance of spawning new thiefbot
+            if (randNum == 1) {
                 ThiefBot* thiefBot;
                 if (m_type == ThiefBotFactory::REGULAR) {
                     getWorld()->playSound(SOUND_ROBOT_BORN);
