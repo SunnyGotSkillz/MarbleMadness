@@ -1,8 +1,8 @@
-**UCLA CS 32 - Introduction to C++ II (Data Structures and Algorithms)
+**UCLA CS 32 - Introduction to C++ II (Data Structures and Algorithms)**
 
-This course project is a video game utilizing object-oriented concepts like Inheritance and Polymorphism.
+**This course project is a video game utilizing object-oriented concepts like Inheritance and Polymorphism.**
 
-Project specification doc: https://web.cs.ucla.edu/classes/winter24/cs32/Projects/3/spec.pdf**
+**Project specification doc: https://web.cs.ucla.edu/classes/winter24/cs32/Projects/3/spec.pdf**
 
 To see what the game looks like in action:
 
