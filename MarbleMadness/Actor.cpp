@@ -119,21 +119,26 @@ void Goodie::doSomething() {
         int x = goodie->getX();
         int y = goodie->getY();
         if (getWorld()->isPlayerColocatedWith(x, y) && !isStolen()) {
-            if (getScore() == 1000) { // EXTRA LIFE
-                getWorld()->increaseScore(getScore());
-                getWorld()->incLives();
-            } else if (getScore() == 500) { // RESTORE HEALTH
-                getWorld()->increaseScore(getScore());
-                getWorld()->restorePlayerHealth();
-            } else if (getScore() == 100) { // AMMO
-                getWorld()->increaseScore(getScore());
-                getWorld()->increaseAmmo();
-            }
-            
+            doGoodie();            
             setDead();
             getWorld()->playSound(SOUND_GOT_GOODIE);
         }
     }
+}
+
+void ExtraLifeGoodie::doGoodie() {
+    getWorld()->increaseScore(getScore());
+    getWorld()->incLives();
+}
+
+void RestoreHealthGoodie::doGoodie() {
+    getWorld()->increaseScore(getScore());
+    getWorld()->restorePlayerHealth();
+}
+
+void AmmoGoodie::doGoodie() {
+    getWorld()->increaseScore(getScore());
+    getWorld()->increaseAmmo();
 }
 
 void Exit::doSomething() {
@@ -163,14 +168,13 @@ void Robot::damage(int damageAmt) {
     }
 }
 
-void RageBot::doSomething() {
-    if (!isAlive()) return;
-    
+void Robot::doSomething() {
     if (getDirection() == up) {
         if (getWorld()->existsClearShotToPlayer(getX(), getY()+1, 0, 1)) {
             Actor* pea = new Pea(getX(), getY()+1, up, getWorld());
             getWorld()->addActor(pea);
             getWorld()->playSound(SOUND_ENEMY_FIRE);
+            m_justAttacked = true;
             return;
         }
     } else if (getDirection() == down) {
@@ -178,6 +182,7 @@ void RageBot::doSomething() {
             Actor* pea = new Pea(getX(), getY()-1, down, getWorld());
             getWorld()->addActor(pea);
             getWorld()->playSound(SOUND_ENEMY_FIRE);
+            m_justAttacked = true;
             return;
         }
     } else if (getDirection() == left) {
@@ -185,15 +190,27 @@ void RageBot::doSomething() {
             Actor* pea = new Pea(getX()-1, getY(), left, getWorld());
             getWorld()->addActor(pea);
             getWorld()->playSound(SOUND_ENEMY_FIRE);
+            m_justAttacked = true;
             return;
         }
-    } else { // right
+    } else if (getDirection() == right) { // right
         if (getWorld()->existsClearShotToPlayer(getX()+1, getY(), 1, 0)) {
             Actor* pea = new Pea(getX()+1, getY(), right, getWorld());
             getWorld()->addActor(pea);
             getWorld()->playSound(SOUND_ENEMY_FIRE);
+            m_justAttacked = true;
             return;
         }
+    }
+}
+
+void RageBot::doSomething() {
+    if (!isAlive()) return;
+    
+    Robot::doSomething();
+    if (justAttacked()) {
+        setJustAttacked(false);
+        return;
     }
     
     if (getDirection() == left) {
@@ -205,14 +222,23 @@ void RageBot::doSomething() {
     } else if (getDirection() == down) {
         if (getWorld()->canAgentMoveTo(this, getX(), getY(), 0, -1)) moveTo(getX(), getY()-1);
         else setDirection(up);
-    } else {
+    } else if (getDirection() == up) {
         if (getWorld()->canAgentMoveTo(this, getX(), getY(), 0, 1)) moveTo(getX(), getY()+1);
         else setDirection(down);
     }
 }
 
-void ThiefBot::doSomething() {
+void ThiefBot::damage(int damageAmt) {
+    Robot::damage(damageAmt);
     
+    if (pickedUpGoodie && !isAlive()) {
+        stolenGoodie->moveTo(getX(), getY());
+        stolenGoodie->setVisible(true);
+        stolenGoodie->setStolen(false);
+    }
+}
+
+void ThiefBot::doSomething() {
     Actor* goodie = getWorld()->getColocatedStealable(getX(), getY());
     if (!pickedUpGoodie && goodie != nullptr) {
         int chanceStealGoodie = rand() % 10 + 1;
@@ -243,6 +269,19 @@ void ThiefBot::doSomething() {
     } else {
         chooseNewDirection();
     }
+}
+
+void RegularThiefBot::doSomething() {
+    if (!isAlive()) return;
+    ThiefBot::doSomething();
+}
+
+void MeanThiefBot::doSomething() {
+    if (!isAlive()) return;
+    
+    ThiefBot::doSomething();
+    if (hasGoodie()) return;
+    Robot::doSomething();
 }
 
 void ThiefBot::chooseNewDirection() {
@@ -283,56 +322,6 @@ void ThiefBot::chooseNewDirection() {
     }
     
     if (i == 4) setDirection(d % 360);
-}
-
-void RegularThiefBot::doSomething() {
-    if (!isAlive()) return;
-    ThiefBot::doSomething();
-}
-
-void ThiefBot::damage(int damageAmt) {
-    Robot::damage(damageAmt);
-    if (pickedUpGoodie && !isAlive()) {
-        stolenGoodie->moveTo(getX(), getY());
-        stolenGoodie->setVisible(true);
-        stolenGoodie->setStolen(false);
-    }
-}
-
-void MeanThiefBot::doSomething() {
-    if (!isAlive()) return;
-    
-    if (getDirection() == up) {
-        if (getWorld()->existsClearShotToPlayer(getX(), getY()+1, 0, 1)) {
-            Actor* pea = new Pea(getX(), getY()+1, up, getWorld());
-            getWorld()->addActor(pea);
-            getWorld()->playSound(SOUND_ENEMY_FIRE);
-            return;
-        }
-    } else if (getDirection() == down) {
-        if (getWorld()->existsClearShotToPlayer(getX(), getY()-1, 0, -1)) {
-            Actor* pea = new Pea(getX(), getY()-1, down, getWorld());
-            getWorld()->addActor(pea);
-            getWorld()->playSound(SOUND_ENEMY_FIRE);
-            return;
-        }
-    } else if (getDirection() == left) {
-        if (getWorld()->existsClearShotToPlayer(getX()-1, getY(),-1, 0)) {
-            Actor* pea = new Pea(getX()-1, getY(), left, getWorld());
-            getWorld()->addActor(pea);
-            getWorld()->playSound(SOUND_ENEMY_FIRE);
-            return;
-        }
-    } else { // right
-        if (getWorld()->existsClearShotToPlayer(getX()+1, getY(), 1, 0)) {
-            Actor* pea = new Pea(getX()+1, getY(), right, getWorld());
-            getWorld()->addActor(pea);
-            getWorld()->playSound(SOUND_ENEMY_FIRE);
-            return;
-        }
-    }
-    
-    ThiefBot::doSomething();
 }
 
 void ThiefBotFactory::doSomething() {

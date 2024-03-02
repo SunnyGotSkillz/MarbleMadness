@@ -11,8 +11,7 @@ class StudentWorld;
 
 class Actor : public GraphObject {
 public:
-    Actor(int imageID, double startX, double startY, int dir, StudentWorld* actorWorld)
-    : GraphObject(imageID, startX, startY, dir) {
+    Actor(int imageID, double startX, double startY, int dir, StudentWorld* actorWorld) : GraphObject(imageID, startX, startY, dir) {
         world = actorWorld;
         setVisible(true);
         alive = true;
@@ -22,7 +21,7 @@ public:
     virtual void doSomething() = 0;
     void setHitPoints(int pts) { hitPoints = pts; }
     int getHitPoints() const { return hitPoints; }
-    StudentWorld* getWorld() { return world; }
+    StudentWorld* getWorld() const { return world; }
     bool isAlive() const { return alive; }
     void setDead() { alive = false; }
     virtual void damage(int damageAmt) { hitPoints -= damageAmt; }
@@ -46,8 +45,7 @@ private:
 
 class Agent : public Actor {
 public:
-    Agent(int imageID, double startX, double startY, int dir, StudentWorld* actorWorld)
-    : Actor(imageID, startX, startY, dir, actorWorld) { }
+    Agent(int imageID, double startX, double startY, int dir, StudentWorld* actorWorld) : Actor(imageID, startX, startY, dir, actorWorld) {}
     
     virtual bool stopsPea() const { return false; }
     virtual bool isDamageable() const { return true; }
@@ -133,8 +131,7 @@ private:
     int m_score;
 };
 
-class Crystal : public PickupableItem
-{
+class Crystal : public PickupableItem {
 public:
     Crystal(int startX, int startY, StudentWorld* world) : PickupableItem(world, startX, startY, IID_CRYSTAL, 50) {}
 };
@@ -144,21 +141,29 @@ public:
     Goodie(StudentWorld* world, int startX, int startY, int imageID, int score) : PickupableItem(world, startX, startY, imageID, score) {}
     virtual void doSomething();
     virtual bool isStealable() const { return true; }
+private:
+    virtual void doGoodie() = 0;
 };
 
 class ExtraLifeGoodie : public Goodie {
 public:
     ExtraLifeGoodie(int startX, int startY, StudentWorld* world) : Goodie(world, startX, startY, IID_EXTRA_LIFE, 1000) {}
+private:
+    virtual void doGoodie();
 };
 
 class RestoreHealthGoodie : public Goodie {
 public:
     RestoreHealthGoodie(int startX, int startY, StudentWorld* world) : Goodie(world, startX, startY, IID_RESTORE_HEALTH, 500) {}
+private:
+    virtual void doGoodie();
 };
 
 class AmmoGoodie : public Goodie {
 public:
     AmmoGoodie(int startX, int startY, StudentWorld* world) : Goodie(world, startX, startY, IID_AMMO, 100) {}
+private:
+    virtual void doGoodie();
 };
 
 class Robot : public Agent {
@@ -166,15 +171,19 @@ public:
     Robot(StudentWorld* world, int startX, int startY, int imageID, int hitPoints, int score, int startDir) : Agent(imageID, startX, startY, startDir, world) {
         m_score = score;
         setHitPoints(hitPoints);
+        m_justAttacked = false;
     }
-    virtual void doSomething() { return; }
+    virtual void doSomething();
     virtual bool isDamageable() const { return true; }
     virtual void damage(int damageAmt);
     virtual bool canPushMarbles() const { return false; }
     virtual bool needsClearShot() const { return true; }
     virtual bool isShootingRobot() const { return true; }
+    bool justAttacked() const { return m_justAttacked; }
+    void setJustAttacked(bool var) { m_justAttacked = var; }
 private:
     int m_score;
+    bool m_justAttacked;
 };
 
 class RageBot : public Robot {
@@ -195,25 +204,26 @@ public:
     virtual void doSomething();
     virtual bool countsInFactoryCensus() const { return true; }
     virtual void damage(int damageAmt);
-    void chooseNewDirection();
+    bool hasGoodie() { return pickedUpGoodie; }
+    
 private:
     int distanceBeforeTurning;
     int currDistance;
     int dir;
     bool pickedUpGoodie;
     Actor* stolenGoodie;
+    
+    void chooseNewDirection();
 };
 
-class RegularThiefBot : public ThiefBot
-{
+class RegularThiefBot : public ThiefBot {
 public:
     RegularThiefBot(int startX, int startY, StudentWorld* world) : ThiefBot(startX, startY, IID_THIEFBOT, 5, 10, world) {}
     virtual void doSomething();
     virtual bool isShootingRobot() const { return false; }
 };
 
-class MeanThiefBot : public ThiefBot
-{
+class MeanThiefBot : public ThiefBot {
 public:
     MeanThiefBot(int startX, int startY, StudentWorld* world) : ThiefBot(startX, startY, IID_MEAN_THIEFBOT, 8, 20, world) {}
     virtual void doSomething();
